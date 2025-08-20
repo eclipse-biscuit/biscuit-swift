@@ -16,10 +16,11 @@ extension Biscuit {
         }
 
         init(algorithm: Biscuit_Format_Schema_PublicKey.Algorithm) {
-            self = switch algorithm {
+            self =
+                switch algorithm {
                 case .ed25519: .ed25519
                 case .secp256R1: .secp256r1
-            }
+                }
         }
 
         /// The ED25519 signing algorithm
@@ -29,8 +30,8 @@ extension Biscuit {
 
         public var description: String {
             switch self.wrapped {
-                case .ed25519: "ed25519"
-                case .secp256r1: "secp256r1"
+            case .ed25519: "ed25519"
+            case .secp256r1: "secp256r1"
             }
         }
 
@@ -40,8 +41,8 @@ extension Biscuit {
 
         var proto: Biscuit_Format_Schema_PublicKey.Algorithm {
             switch self.wrapped {
-                case .ed25519: .ed25519
-                case .secp256r1: .secp256R1
+            case .ed25519: .ed25519
+            case .secp256r1: .secp256R1
             }
         }
     }

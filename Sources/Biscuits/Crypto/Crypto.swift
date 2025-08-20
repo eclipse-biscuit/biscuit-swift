@@ -1,3 +1,5 @@
+@preconcurrency import Crypto
+
 /*
  * Copyright (c) 2025 Contributors to the Eclipse Foundation.
  * SPDX-License-Identifier: Apache-2.0
@@ -7,7 +9,6 @@ import FoundationEssentials
 #else
 import Foundation
 #endif
-import Crypto
 
 extension Biscuit {
     /// A private key that can be used to sign a biscuit
@@ -36,7 +37,7 @@ extension Biscuit {
     }
 }
 
-extension Curve25519.Signing.PrivateKey: Biscuit.PrivateKey { }
+extension Curve25519.Signing.PrivateKey: Biscuit.PrivateKey {}
 
 extension P256.Signing.PrivateKey: Biscuit.PrivateKey {
     public func signature(for input: Data) throws -> Data {
@@ -44,11 +45,13 @@ extension P256.Signing.PrivateKey: Biscuit.PrivateKey {
     }
 }
 
+#if os(Darwin)
 extension SecureEnclave.P256.Signing.PrivateKey: Biscuit.PrivateKey {
     public func signature(for input: Data) throws -> Data {
         try self.signature(for: input).rawRepresentation
     }
 }
+#endif
 
 extension Curve25519.Signing.PublicKey: Biscuit.PublicKey {
     public var algorithm: Biscuit.SigningAlgorithm { .ed25519 }

@@ -67,7 +67,6 @@ extension Biscuit {
             self.context = context
         }
 
-
         public static func buildBlock(_ block: DatalogBlock...) -> DatalogBlock {
             DatalogBlock(
                 checks: block.flatMap { $0.checks },
@@ -77,7 +76,7 @@ extension Biscuit {
                 context: block.compactMap { $0.context }.joined()
             )
         }
-        
+
         public static func buildOptional(_ block: DatalogBlock?) -> DatalogBlock {
             block ?? DatalogBlock()
         }
@@ -158,9 +157,9 @@ extension Biscuit {
             if proto.hasContext {
                 self.context = proto.context
             }
-            self.checks = try proto.checksV2.map { try Check(proto: $0, interner: interner) }
-            self.facts = try proto.factsV2.map { try Fact(proto: $0.predicate, interner: interner) }
-            self.rules = try proto.rulesV2.map { try Rule(proto: $0, interner: interner) }
+            self.checks = try proto.checks.map { try Check(proto: $0, interner: interner) }
+            self.facts = try proto.facts.map { try Fact(proto: $0.predicate, interner: interner) }
+            self.rules = try proto.rules.map { try Rule(proto: $0, interner: interner) }
             self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner) }
         }
 
@@ -175,13 +174,13 @@ extension Biscuit {
                 proto.context = context
             }
             proto.version = self.version
-            proto.checksV2 = self.checks.map { $0.proto(interner) }
-            proto.factsV2 = self.facts.map { 
-                var fact = Biscuit_Format_Schema_FactV2()
+            proto.checks = self.checks.map { $0.proto(interner) }
+            proto.facts = self.facts.map {
+                var fact = Biscuit_Format_Schema_Fact()
                 fact.predicate = $0.proto(interner)
                 return fact
             }
-            proto.rulesV2 = self.rules.map { $0.proto(interner) }
+            proto.rules = self.rules.map { $0.proto(interner) }
             proto.scope = self.trusted.map { $0.proto(interner) }
             proto.publicKeys = self.publicKeys.map { $0.proto }
             return proto

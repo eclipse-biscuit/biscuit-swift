@@ -49,7 +49,11 @@ extension Biscuit {
         }
 
         // for the authority block
-        init<Key: PublicKey>(proto: Biscuit_Format_Schema_SignedBlock, key: Key, interner: inout InternmentTables) throws {
+        init<Key: PublicKey>(
+            proto: Biscuit_Format_Schema_SignedBlock,
+            key: Key,
+            interner: inout InternmentTables
+        ) throws {
             self = try Block.init(proto: proto, interner: &interner)
             let signatureInput = try self.signatureInput(interner: interner.primary)
             guard key.isValidSignature(self.signature, for: signatureInput) else {
@@ -58,7 +62,12 @@ extension Biscuit {
         }
 
         // for attenuation blocks
-        init(proto: Biscuit_Format_Schema_SignedBlock, lastBlock: Block, blockID: Int, interner: inout InternmentTables) throws {
+        init(
+            proto: Biscuit_Format_Schema_SignedBlock,
+            lastBlock: Block,
+            blockID: Int,
+            interner: inout InternmentTables
+        ) throws {
             self = try Block.init(proto: proto, blockID: blockID, interner: &interner)
             let blockInterner = interner.blockTable(for: blockID)
             let signatureInput = try self.signatureInput(interner: blockInterner, lastSig: lastBlock.signature)
@@ -80,7 +89,7 @@ extension Biscuit {
             self.signature = proto.signature
             self.datalog = try DatalogBlock(serializedData: proto.block, &interner.primary)
         }
-        
+
         init(proto: Biscuit_Format_Schema_SignedBlock, blockID: Int, interner: inout InternmentTables) throws {
             try Self.checkProto(proto: proto)
             self.nextKey = try InternalPublicKey(proto: proto.nextKey)
@@ -137,14 +146,14 @@ extension Biscuit {
         }
 
         var signedByThirdParty: Bool { self.externalSignature != nil }
-        
+
         /// The third party key that signed this block, if it exists
         public var thirdPartyKey: ThirdPartyKey? { self.externalSignature?.publicKey }
 
         func signatureInput(interner: BlockInternmentTable, lastSig: Data? = nil) throws -> Data {
             switch self.version ?? 0 {
-                case 0: return try SignatureV0.blockSignatureInput(block: self, interner: interner)
-                default: return try SignatureV1.blockSignatureInput(block: self, sig: lastSig, interner: interner)
+            case 0: return try SignatureV0.blockSignatureInput(block: self, interner: interner)
+            default: return try SignatureV1.blockSignatureInput(block: self, sig: lastSig, interner: interner)
             }
         }
 
@@ -179,7 +188,12 @@ extension Biscuit {
             }
 
             func isValidSignature(for block: Block, lastSig: Data, interner: BlockInternmentTable) throws {
-                try self.publicKey.isValidExternalSignature(self.signature, for: block, lastSig: lastSig, interner: interner)
+                try self.publicKey.isValidExternalSignature(
+                    self.signature,
+                    for: block,
+                    lastSig: lastSig,
+                    interner: interner
+                )
             }
 
             var proto: Biscuit_Format_Schema_ExternalSignature {

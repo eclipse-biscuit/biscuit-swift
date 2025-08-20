@@ -60,23 +60,23 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
         var stack: [StackElement] = []
         for op in self.ops {
             switch op {
-                case .value(let term):
-                    try stack.append(StackElement(term, variables))
-                case .unary(let op):
-                    guard let arg = stack.popLast() else {
-                        throw Biscuit.EvaluationError.invalidUnaryOp
-                    }
-                    try stack.append(.value(op.evaluate(arg)))
-                case .binary(let op):
-                    guard let arg2 = stack.popLast() else {
-                        throw Biscuit.EvaluationError.invalidBinaryOp
-                    }
-                    guard let arg1 = stack.popLast() else {
-                        throw Biscuit.EvaluationError.invalidBinaryOp
-                    }
-                    try stack.append(.value(op.evaluate(arg1, arg2, variables)))
-                case .closure(let closure):
-                    stack.append(.closure(closure))
+            case .value(let term):
+                try stack.append(StackElement(term, variables))
+            case .unary(let op):
+                guard let arg = stack.popLast() else {
+                    throw Biscuit.EvaluationError.invalidUnaryOp
+                }
+                try stack.append(.value(op.evaluate(arg)))
+            case .binary(let op):
+                guard let arg2 = stack.popLast() else {
+                    throw Biscuit.EvaluationError.invalidBinaryOp
+                }
+                guard let arg1 = stack.popLast() else {
+                    throw Biscuit.EvaluationError.invalidBinaryOp
+                }
+                try stack.append(.value(op.evaluate(arg1, arg2, variables)))
+            case .closure(let closure):
+                stack.append(.closure(closure))
             }
         }
         if stack.count == 1 {

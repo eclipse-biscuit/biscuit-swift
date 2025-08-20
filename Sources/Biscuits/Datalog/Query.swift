@@ -11,8 +11,8 @@ extension Biscuit {
         public let expressions: [Expression]
         /// The trusted scopes of this query
         public let trusted: [TrustedScope]
-        
-        init(proto: Biscuit_Format_Schema_RuleV2, interner: BlockInternmentTable) throws {
+
+        init(proto: Biscuit_Format_Schema_Rule, interner: BlockInternmentTable) throws {
             guard proto.head == Predicate.query else {
                 throw ValidationError.invalidQueryHead
             }
@@ -43,8 +43,8 @@ extension Biscuit {
             }
         }
 
-        func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_RuleV2 {
-            var proto = Biscuit_Format_Schema_RuleV2()
+        func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Rule {
+            var proto = Biscuit_Format_Schema_Rule()
             proto.head = Predicate.query
             proto.body = self.predicates.map { $0.proto(interner) }
             proto.expressions = self.expressions.map { $0.proto(interner) }

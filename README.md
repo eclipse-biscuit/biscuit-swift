@@ -91,6 +91,11 @@ let foo = Term(variable: "foo")
 foo.greaterThan(0).and(foo.lessThan(100))
 ```
 
+## Building and testing
+
+This package is built using Swift 6. Tests are written using XCTest, which is distributed with
+xcode.
+
 ## License
 
 Licensed under Apache License, Version 2.0, ([LICENSE-APACHE][license] or http://www.apache.org/licenses/LICENSE-2.0)

@@ -49,7 +49,7 @@ extension Biscuit {
             public static var noLimits: Limits { Limits() }
         }
 
-        init() { }
+        init() {}
 
         init(limits: Limits) {
             self = Authorizer()
@@ -172,19 +172,21 @@ extension Biscuit {
 extension Check {
     func validate(_ resolution: Resolution, _ trusted: Set<Int>, _ scope: Resolution.Scope) throws -> Bool {
         for query in self.queries {
-            let trusted = if query.trusted.isEmpty {
-                trusted
-            } else {
-                resolution.trustScopes(query.trusted, scope.blockID)
-            }
-            let checkSucceeded = switch self.kind.wrapped {
+            let trusted =
+                if query.trusted.isEmpty {
+                    trusted
+                } else {
+                    resolution.trustScopes(query.trusted, scope.blockID)
+                }
+            let checkSucceeded =
+                switch self.kind.wrapped {
                 case .one:
                     try resolution.checkQueryIf(query, trusted)
                 case .all:
                     try resolution.checkQueryAll(query, trusted)
                 case .reject:
                     try !resolution.checkQueryIf(query, trusted)
-            }
+                }
             if checkSucceeded {
                 return true
             }
@@ -199,10 +201,10 @@ extension Policy {
             let trusted = resolution.trustScopes(query.trusted, nil)
             if try resolution.checkQueryIf(query, trusted) {
                 switch self.kind.wrapped {
-                    case .allow:
-                        return Biscuit.Authorization(policy: self)
-                    case .deny:
-                        throw Biscuit.AuthorizationError(deny: self)
+                case .allow:
+                    return Biscuit.Authorization(policy: self)
+                case .deny:
+                    throw Biscuit.AuthorizationError(deny: self)
                 }
             }
         }

@@ -94,7 +94,7 @@ struct Resolution {
     ) -> [[String: Value]] {
         guard !predicates.isEmpty else { return [variables] }
         let start = predicates.startIndex
-        return self.stableFactsThatSupport(predicates[start], trusted, variables).flatMap() {
+        return self.stableFactsThatSupport(predicates[start], trusted, variables).flatMap {
             self.collectStableVariables(predicates[(start + 1)...], trusted, $0)
         }
     }
@@ -106,12 +106,16 @@ struct Resolution {
     ) -> [[String: Value]] {
         guard !predicates.isEmpty else { return [variables] }
         let start = predicates.startIndex
-        return self.allFactsThatSupport(predicates[start], trusted, variables).flatMap() {
+        return self.allFactsThatSupport(predicates[start], trusted, variables).flatMap {
             self.collectAllVariables(predicates[(start + 1)...], trusted, $0)
         }
     }
 
-    func recentFactsThatSupport(_ predicate: Predicate, _ trusted: Set<Int>, _ vars: [String: Value] = [:])
+    func recentFactsThatSupport(
+        _ predicate: Predicate,
+        _ trusted: Set<Int>,
+        _ vars: [String: Value] = [:]
+    )
         -> [[String: Value]]
     {
         var relevantFacts: Set<Fact> = self.recent[FactId(predicate, .authorizer)] ?? []
@@ -121,7 +125,11 @@ struct Resolution {
         return relevantFacts.compactMap { $0.supportsWithVariables(predicate, vars) }
     }
 
-    func stableFactsThatSupport(_ predicate: Predicate, _ trusted: Set<Int>, _ vars: [String: Value] = [:])
+    func stableFactsThatSupport(
+        _ predicate: Predicate,
+        _ trusted: Set<Int>,
+        _ vars: [String: Value] = [:]
+    )
         -> [[String: Value]]
     {
         var relevantFacts: Set<Fact> = self.stable[FactId(predicate, .authorizer)] ?? []
@@ -131,7 +139,11 @@ struct Resolution {
         return relevantFacts.compactMap { $0.supportsWithVariables(predicate, vars) }
     }
 
-    func allFactsThatSupport(_ predicate: Predicate, _ trusted: Set<Int>, _ vars: [String: Value] = [:])
+    func allFactsThatSupport(
+        _ predicate: Predicate,
+        _ trusted: Set<Int>,
+        _ vars: [String: Value] = [:]
+    )
         -> [[String: Value]]
     {
         var facts = self.stableFactsThatSupport(predicate, trusted, vars)
@@ -149,18 +161,18 @@ struct Resolution {
         }
         for scope in scopes {
             switch scope.wrapped {
-                case .authority:
-                    trusted.insert(0)
-                case .previous:
-                    if let blockID = blockID {
-                        for id in 0..<blockID {
-                            trusted.insert(id)
-                        }
+            case .authority:
+                trusted.insert(0)
+            case .previous:
+                if let blockID = blockID {
+                    for id in 0..<blockID {
+                        trusted.insert(id)
                     }
-                case .publicKey(let publicKey):
-                    if let blockIDs = self.publicKeys[publicKey] {
-                        trusted.formUnion(blockIDs)
-                    }
+                }
+            case .publicKey(let publicKey):
+                if let blockIDs = self.publicKeys[publicKey] {
+                    trusted.formUnion(blockIDs)
+                }
             }
         }
         return trusted
@@ -168,8 +180,9 @@ struct Resolution {
 
     mutating func addFact(_ fact: Fact, _ scope: Scope) {
         let factID = FactId(fact, scope)
-        guard self.stable[factID]?.contains(fact) != true
-            && self.recent[factID]?.contains(fact) != true
+        guard
+            self.stable[factID]?.contains(fact) != true
+                && self.recent[factID]?.contains(fact) != true
         else { return }
         self.new[factID, default: []].insert(fact)
     }
@@ -180,8 +193,8 @@ struct Resolution {
 
         var blockID: Int? {
             switch self {
-                case .block(let blockID): blockID
-                case .authorizer: nil
+            case .block(let blockID): blockID
+            case .authorizer: nil
             }
         }
     }

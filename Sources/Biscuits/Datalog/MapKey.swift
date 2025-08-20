@@ -9,7 +9,9 @@ import Foundation
 #endif
 
 /// A Value that can be used as a key in a map
-public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, ExpressionConvertible, Hashable, Sendable, CustomStringConvertible {
+public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, ExpressionConvertible, Hashable, Sendable,
+    CustomStringConvertible
+{
     internal enum Wrapped: Hashable {
         case integer(Int64)
         case string(String)
@@ -17,11 +19,12 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
     let wrapped: Wrapped
 
     init(proto: Biscuit_Format_Schema_MapKey, interner: BlockInternmentTable) throws {
-        self.wrapped = switch proto.content {
+        self.wrapped =
+            switch proto.content {
             case .integer(let i): .integer(i)
             case .string(let s): try .string(interner.lookupSymbol(Int(s)))
             case .none: throw Biscuit.ValidationError.missingTerm
-        }
+            }
     }
 
     /// An integer MapKey
@@ -41,10 +44,10 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
     // Intentionally not public and MapKey does not conform to Comparable
     static func < (lhs: MapKey, rhs: MapKey) -> Bool {
         switch (lhs.wrapped, rhs.wrapped) {
-            case (.integer(let l), .integer(let r)): return l < r
-            case (.string(let l), .string(let r)): return l < r
-            case (.integer, .string): return true
-            case (.string, .integer): return false
+        case (.integer(let l), .integer(let r)): return l < r
+        case (.string(let l), .string(let r)): return l < r
+        case (.integer, .string): return true
+        case (.string, .integer): return false
         }
     }
 
@@ -56,17 +59,17 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
 
     func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_MapKey {
         var proto = Biscuit_Format_Schema_MapKey()
-        switch self .wrapped {
-            case .string(let s): proto.string = UInt64(interner.symbolIndex(for: s))
-            case .integer(let i): proto.integer = Int64(i)
+        switch self.wrapped {
+        case .string(let s): proto.string = UInt64(interner.symbolIndex(for: s))
+        case .integer(let i): proto.integer = Int64(i)
         }
         return proto
     }
 
     public var description: String {
         switch self.wrapped {
-            case .string(let s): "\"\(s)\""
-            case .integer(let i): "\(i)"
+        case .string(let s): "\"\(s)\""
+        case .integer(let i): "\(i)"
         }
     }
 
@@ -74,8 +77,8 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
 
     public var value: Value {
         switch self.wrapped {
-            case .integer(let i): Value(.integer(i))
-            case .string(let s): Value(s)
+        case .integer(let i): Value(.integer(i))
+        case .string(let s): Value(s)
         }
     }
 }
@@ -89,13 +92,13 @@ extension Biscuit_Format_Schema_MapEntry: Comparable {
 extension Biscuit_Format_Schema_MapKey: Comparable {
     static func < (lhs: Biscuit_Format_Schema_MapKey, rhs: Biscuit_Format_Schema_MapKey) -> Bool {
         switch (lhs.content, rhs.content) {
-            case (.integer(let l), .integer(let r)): return l < r
-            case (.string(let l), .string(let r)): return l < r
-            case (.none, .none): return true
-            case (.integer, .string): return true
-            case (.string, .integer): return false
-            case (.none, _): return true
-            case (_, .none): return false
+        case (.integer(let l), .integer(let r)): return l < r
+        case (.string(let l), .string(let r)): return l < r
+        case (.none, .none): return true
+        case (.integer, .string): return true
+        case (.string, .integer): return false
+        case (.none, _): return true
+        case (_, .none): return false
         }
     }
 }

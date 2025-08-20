@@ -21,7 +21,11 @@ struct SignatureV1 {
     fileprivate static let ed25519: Data = Data("\0ALGORITHM\0\0\0\0\0".utf8)
     fileprivate static let secp256r1: Data = Data("\0ALGORITHM\0\u{1}\0\0\0".utf8)
 
-    static func externalSignatureInput(block: Biscuit.DatalogBlock, sig: Data, interner: BlockInternmentTable) throws -> Data {
+    static func externalSignatureInput(
+        block: Biscuit.DatalogBlock,
+        sig: Data,
+        interner: BlockInternmentTable
+    ) throws -> Data {
         var data = SignatureV1.external
         data.append(contentsOf: SignatureV1.version1)
         data.append(contentsOf: SignatureV1.payload)
@@ -52,8 +56,8 @@ struct SignatureV1 {
 
     fileprivate static func algorithm(for algorithm: Biscuit.SigningAlgorithm) -> Data {
         switch algorithm.wrapped {
-            case .ed25519: ed25519
-            case .secp256r1: secp256r1
+        case .ed25519: ed25519
+        case .secp256r1: secp256r1
         }
     }
 }
@@ -79,8 +83,8 @@ struct SignatureV0 {
 
     fileprivate static func algorithm(for algorithm: Biscuit.SigningAlgorithm) -> Data {
         switch algorithm.wrapped {
-            case .ed25519: Data([0, 0, 0, 0])
-            case .secp256r1: Data([1, 0, 0, 0])
+        case .ed25519: Data([0, 0, 0, 0])
+        case .secp256r1: Data([1, 0, 0, 0])
         }
     }
 }

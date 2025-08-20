@@ -28,51 +28,52 @@ public struct Term: TermConvertible, ExpressionConvertible, Sendable, Hashable, 
         self.wrapped = .value(value.value)
     }
 
-    init(proto: Biscuit_Format_Schema_TermV2, interner: BlockInternmentTable) throws {
-        self.wrapped = switch proto.content {
+    init(proto: Biscuit_Format_Schema_Term, interner: BlockInternmentTable) throws {
+        self.wrapped =
+            switch proto.content {
             case .variable(let v): try .variable(interner.lookupSymbol(Int(v)))
             default: try .value(Value(proto: proto, interner: interner))
-        }
+            }
     }
 
     func intern(_ interner: inout BlockInternmentTable, _ locals: inout [String]) {
         switch self.wrapped {
-            case .variable(let name): interner.intern(name, &locals)
-            case .value(let term): term.intern(&interner, &locals)
+        case .variable(let name): interner.intern(name, &locals)
+        case .value(let term): term.intern(&interner, &locals)
         }
     }
 
     func makeConcrete(variables: [String: Value]) throws -> Value {
         switch self.wrapped {
-            case .variable(let name):
-                guard let term = variables[name] else {
-                    throw Biscuit.EvaluationError.unknownVariable
-                }
-                return term
-            case .value(let term): return term
+        case .variable(let name):
+            guard let term = variables[name] else {
+                throw Biscuit.EvaluationError.unknownVariable
+            }
+            return term
+        case .value(let term): return term
         }
     }
 
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_TermV2 {
-        var proto = Biscuit_Format_Schema_TermV2()
+    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Term {
+        var proto = Biscuit_Format_Schema_Term()
         switch self.wrapped {
-            case .variable(let v): proto.variable = UInt32(interner.symbolIndex(for: v))
-            case .value(let term): return term.proto(interner)
+        case .variable(let v): proto.variable = UInt32(interner.symbolIndex(for: v))
+        case .value(let term): return term.proto(interner)
         }
         return proto
     }
 
     var isConcrete: Bool {
         switch self.wrapped {
-            case .value: true
-            case .variable: false
+        case .value: true
+        case .variable: false
         }
     }
 
     var value: Value? {
         switch self.wrapped {
-            case .value(let v): v
-            case .variable: nil
+        case .value(let v): v
+        case .variable: nil
         }
     }
 
@@ -80,8 +81,8 @@ public struct Term: TermConvertible, ExpressionConvertible, Sendable, Hashable, 
 
     public var description: String {
         switch self.wrapped {
-            case .variable(let name): "$\(name)"
-            case .value(let term): term.description
+        case .variable(let name): "$\(name)"
+        case .value(let term): term.description
         }
     }
 
@@ -159,7 +160,6 @@ public struct Term: TermConvertible, ExpressionConvertible, Sendable, Hashable, 
     public func strictOr<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {
         self.expression.strictOr(rhs)
     }
-
 
     /// An add expression
     public func add<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {

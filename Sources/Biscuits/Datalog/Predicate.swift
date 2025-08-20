@@ -33,7 +33,7 @@ public struct Predicate: Sendable, Hashable, CustomStringConvertible {
         self.terms = terms
     }
 
-    init(proto: Biscuit_Format_Schema_PredicateV2, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Predicate, interner: BlockInternmentTable) throws {
         guard proto.hasName else {
             throw Biscuit.ValidationError.missingPredicate
         }
@@ -48,8 +48,8 @@ public struct Predicate: Sendable, Hashable, CustomStringConvertible {
         }
     }
 
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_PredicateV2 {
-        var proto = Biscuit_Format_Schema_PredicateV2()
+    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Predicate {
+        var proto = Biscuit_Format_Schema_Predicate()
         proto.name = UInt64(interner.symbolIndex(for: self.name))
         proto.terms = self.terms.map { $0.proto(interner) }
         return proto
@@ -60,17 +60,20 @@ public struct Predicate: Sendable, Hashable, CustomStringConvertible {
     }
 
     func forceConcrete() throws -> Fact {
-        try Fact(name: self.name, values: self.terms.map {
-            switch $0.wrapped {
+        try Fact(
+            name: self.name,
+            values: self.terms.map {
+                switch $0.wrapped {
                 case .value(let v): return v
                 case .variable: throw Biscuit.DatalogError.variableInFact
+                }
             }
-        })
+        )
 
     }
 
-    static var query: Biscuit_Format_Schema_PredicateV2 {
-        var proto = Biscuit_Format_Schema_PredicateV2()
+    static var query: Biscuit_Format_Schema_Predicate {
+        var proto = Biscuit_Format_Schema_Predicate()
         proto.name = UInt64(27)
         return proto
     }

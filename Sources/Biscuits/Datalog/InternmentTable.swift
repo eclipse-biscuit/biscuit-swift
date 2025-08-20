@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Contributors to the Eclipse Foundation.
  * SPDX-License-Identifier: Apache-2.0
  */
-struct InternmentTables: Hashable {
+struct InternmentTables: Sendable, Hashable {
     var primary: BlockInternmentTable = BlockInternmentTable()
     var thirdPartyTables: [Int: BlockInternmentTable] = [:]
 
@@ -25,7 +25,7 @@ struct InternmentTables: Hashable {
     }
 }
 
-struct BlockInternmentTable: Hashable {
+struct BlockInternmentTable: Sendable, Hashable {
     var symbols: InternmentTable<String> = InternmentTable()
     var publicKeys: InternmentTable<Biscuit.ThirdPartyKey> = InternmentTable()
 
@@ -78,7 +78,7 @@ struct BlockInternmentTable: Hashable {
         }
     }
 
-    struct InternmentTable<T: Hashable>: Hashable {
+    struct InternmentTable<T: Sendable & Hashable>: Sendable, Hashable {
         var table: [T: Int] = [:]
         var array: [T] = []
 

@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2025 Contributors to the Eclipse Foundation.
- * SPDX-License-Identifier: Apache-2.0
- */
 // DO NOT EDIT.
 // swift-format-ignore-file
 //
@@ -301,11 +297,11 @@ struct Biscuit_Format_Schema_Block {
   /// Clears the value of `version`. Subsequent reads from it will return its default value.
   mutating func clearVersion() {self._version = nil}
 
-  var factsV2: [Biscuit_Format_Schema_FactV2] = []
+  var facts: [Biscuit_Format_Schema_Fact] = []
 
-  var rulesV2: [Biscuit_Format_Schema_RuleV2] = []
+  var rules: [Biscuit_Format_Schema_Rule] = []
 
-  var checksV2: [Biscuit_Format_Schema_CheckV2] = []
+  var checks: [Biscuit_Format_Schema_Check] = []
 
   var scope: [Biscuit_Format_Schema_Scope] = []
 
@@ -405,13 +401,13 @@ extension Biscuit_Format_Schema_Scope.ScopeType: CaseIterable {
 
 #endif  // swift(>=4.2)
 
-struct Biscuit_Format_Schema_FactV2 {
+struct Biscuit_Format_Schema_Fact {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var predicate: Biscuit_Format_Schema_PredicateV2 {
-    get {return _predicate ?? Biscuit_Format_Schema_PredicateV2()}
+  var predicate: Biscuit_Format_Schema_Predicate {
+    get {return _predicate ?? Biscuit_Format_Schema_Predicate()}
     set {_predicate = newValue}
   }
   /// Returns true if `predicate` has been explicitly set.
@@ -423,16 +419,16 @@ struct Biscuit_Format_Schema_FactV2 {
 
   init() {}
 
-  fileprivate var _predicate: Biscuit_Format_Schema_PredicateV2? = nil
+  fileprivate var _predicate: Biscuit_Format_Schema_Predicate? = nil
 }
 
-struct Biscuit_Format_Schema_RuleV2 {
+struct Biscuit_Format_Schema_Rule {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var head: Biscuit_Format_Schema_PredicateV2 {
-    get {return _head ?? Biscuit_Format_Schema_PredicateV2()}
+  var head: Biscuit_Format_Schema_Predicate {
+    get {return _head ?? Biscuit_Format_Schema_Predicate()}
     set {_head = newValue}
   }
   /// Returns true if `head` has been explicitly set.
@@ -440,9 +436,9 @@ struct Biscuit_Format_Schema_RuleV2 {
   /// Clears the value of `head`. Subsequent reads from it will return its default value.
   mutating func clearHead() {self._head = nil}
 
-  var body: [Biscuit_Format_Schema_PredicateV2] = []
+  var body: [Biscuit_Format_Schema_Predicate] = []
 
-  var expressions: [Biscuit_Format_Schema_ExpressionV2] = []
+  var expressions: [Biscuit_Format_Schema_Expression] = []
 
   var scope: [Biscuit_Format_Schema_Scope] = []
 
@@ -450,17 +446,17 @@ struct Biscuit_Format_Schema_RuleV2 {
 
   init() {}
 
-  fileprivate var _head: Biscuit_Format_Schema_PredicateV2? = nil
+  fileprivate var _head: Biscuit_Format_Schema_Predicate? = nil
 }
 
-struct Biscuit_Format_Schema_CheckV2 {
+struct Biscuit_Format_Schema_Check {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var queries: [Biscuit_Format_Schema_RuleV2] = []
+  var queries: [Biscuit_Format_Schema_Rule] = []
 
-  var kind: Biscuit_Format_Schema_CheckV2.Kind {
+  var kind: Biscuit_Format_Schema_Check.Kind {
     get {return _kind ?? .one}
     set {_kind = newValue}
   }
@@ -502,18 +498,18 @@ struct Biscuit_Format_Schema_CheckV2 {
 
   init() {}
 
-  fileprivate var _kind: Biscuit_Format_Schema_CheckV2.Kind? = nil
+  fileprivate var _kind: Biscuit_Format_Schema_Check.Kind? = nil
 }
 
 #if swift(>=4.2)
 
-extension Biscuit_Format_Schema_CheckV2.Kind: CaseIterable {
+extension Biscuit_Format_Schema_Check.Kind: CaseIterable {
   // Support synthesized by the compiler.
 }
 
 #endif  // swift(>=4.2)
 
-struct Biscuit_Format_Schema_PredicateV2 {
+struct Biscuit_Format_Schema_Predicate {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -527,7 +523,7 @@ struct Biscuit_Format_Schema_PredicateV2 {
   /// Clears the value of `name`. Subsequent reads from it will return its default value.
   mutating func clearName() {self._name = nil}
 
-  var terms: [Biscuit_Format_Schema_TermV2] = []
+  var terms: [Biscuit_Format_Schema_Term] = []
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -536,12 +532,12 @@ struct Biscuit_Format_Schema_PredicateV2 {
   fileprivate var _name: UInt64? = nil
 }
 
-struct Biscuit_Format_Schema_TermV2 {
+struct Biscuit_Format_Schema_Term {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var content: Biscuit_Format_Schema_TermV2.OneOf_Content? = nil
+  var content: Biscuit_Format_Schema_Term.OneOf_Content? = nil
 
   var variable: UInt32 {
     get {
@@ -659,7 +655,7 @@ struct Biscuit_Format_Schema_TermV2 {
     }
 
   #if !swift(>=4.1)
-    static func ==(lhs: Biscuit_Format_Schema_TermV2.OneOf_Content, rhs: Biscuit_Format_Schema_TermV2.OneOf_Content) -> Bool {
+    static func ==(lhs: Biscuit_Format_Schema_Term.OneOf_Content, rhs: Biscuit_Format_Schema_Term.OneOf_Content) -> Bool {
       // The use of inline closures is to circumvent an issue where the compiler
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
@@ -718,7 +714,7 @@ struct Biscuit_Format_Schema_TermSet {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var set: [Biscuit_Format_Schema_TermV2] = []
+  var set: [Biscuit_Format_Schema_Term] = []
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -730,7 +726,7 @@ struct Biscuit_Format_Schema_Array {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var array: [Biscuit_Format_Schema_TermV2] = []
+  var array: [Biscuit_Format_Schema_Term] = []
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -763,8 +759,8 @@ struct Biscuit_Format_Schema_MapEntry {
   /// Clears the value of `key`. Subsequent reads from it will return its default value.
   mutating func clearKey() {self._key = nil}
 
-  var value: Biscuit_Format_Schema_TermV2 {
-    get {return _value ?? Biscuit_Format_Schema_TermV2()}
+  var value: Biscuit_Format_Schema_Term {
+    get {return _value ?? Biscuit_Format_Schema_Term()}
     set {_value = newValue}
   }
   /// Returns true if `value` has been explicitly set.
@@ -777,7 +773,7 @@ struct Biscuit_Format_Schema_MapEntry {
   init() {}
 
   fileprivate var _key: Biscuit_Format_Schema_MapKey? = nil
-  fileprivate var _value: Biscuit_Format_Schema_TermV2? = nil
+  fileprivate var _value: Biscuit_Format_Schema_Term? = nil
 }
 
 struct Biscuit_Format_Schema_MapKey {
@@ -832,7 +828,7 @@ struct Biscuit_Format_Schema_MapKey {
   init() {}
 }
 
-struct Biscuit_Format_Schema_ExpressionV2 {
+struct Biscuit_Format_Schema_Expression {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -851,10 +847,10 @@ struct Biscuit_Format_Schema_Op {
 
   var content: Biscuit_Format_Schema_Op.OneOf_Content? = nil
 
-  var value: Biscuit_Format_Schema_TermV2 {
+  var value: Biscuit_Format_Schema_Term {
     get {
       if case .value(let v)? = content {return v}
-      return Biscuit_Format_Schema_TermV2()
+      return Biscuit_Format_Schema_Term()
     }
     set {content = .value(newValue)}
   }
@@ -886,7 +882,7 @@ struct Biscuit_Format_Schema_Op {
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   enum OneOf_Content: Equatable {
-    case value(Biscuit_Format_Schema_TermV2)
+    case value(Biscuit_Format_Schema_Term)
     case unary(Biscuit_Format_Schema_OpUnary)
     case binary(Biscuit_Format_Schema_OpBinary)
     case closure(Biscuit_Format_Schema_OpClosure)
@@ -1188,7 +1184,7 @@ struct Biscuit_Format_Schema_Policy {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var queries: [Biscuit_Format_Schema_RuleV2] = []
+  var queries: [Biscuit_Format_Schema_Rule] = []
 
   var kind: Biscuit_Format_Schema_Policy.Kind {
     get {return _kind ?? .allow}
@@ -1256,11 +1252,11 @@ struct Biscuit_Format_Schema_AuthorizerPolicies {
   /// Clears the value of `version`. Subsequent reads from it will return its default value.
   mutating func clearVersion() {self._version = nil}
 
-  var facts: [Biscuit_Format_Schema_FactV2] = []
+  var facts: [Biscuit_Format_Schema_Fact] = []
 
-  var rules: [Biscuit_Format_Schema_RuleV2] = []
+  var rules: [Biscuit_Format_Schema_Rule] = []
 
-  var checks: [Biscuit_Format_Schema_CheckV2] = []
+  var checks: [Biscuit_Format_Schema_Check] = []
 
   var policies: [Biscuit_Format_Schema_Policy] = []
 
@@ -1535,7 +1531,7 @@ struct Biscuit_Format_Schema_GeneratedFacts {
 
   var origins: [Biscuit_Format_Schema_Origin] = []
 
-  var facts: [Biscuit_Format_Schema_FactV2] = []
+  var facts: [Biscuit_Format_Schema_Fact] = []
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1565,11 +1561,11 @@ struct Biscuit_Format_Schema_SnapshotBlock {
   /// Clears the value of `version`. Subsequent reads from it will return its default value.
   mutating func clearVersion() {self._version = nil}
 
-  var factsV2: [Biscuit_Format_Schema_FactV2] = []
+  var facts: [Biscuit_Format_Schema_Fact] = []
 
-  var rulesV2: [Biscuit_Format_Schema_RuleV2] = []
+  var rules: [Biscuit_Format_Schema_Rule] = []
 
-  var checksV2: [Biscuit_Format_Schema_CheckV2] = []
+  var checks: [Biscuit_Format_Schema_Check] = []
 
   var scope: [Biscuit_Format_Schema_Scope] = []
 
@@ -1603,20 +1599,20 @@ extension Biscuit_Format_Schema_Block: @unchecked Sendable {}
 extension Biscuit_Format_Schema_Scope: @unchecked Sendable {}
 extension Biscuit_Format_Schema_Scope.OneOf_Content: @unchecked Sendable {}
 extension Biscuit_Format_Schema_Scope.ScopeType: @unchecked Sendable {}
-extension Biscuit_Format_Schema_FactV2: @unchecked Sendable {}
-extension Biscuit_Format_Schema_RuleV2: @unchecked Sendable {}
-extension Biscuit_Format_Schema_CheckV2: @unchecked Sendable {}
-extension Biscuit_Format_Schema_CheckV2.Kind: @unchecked Sendable {}
-extension Biscuit_Format_Schema_PredicateV2: @unchecked Sendable {}
-extension Biscuit_Format_Schema_TermV2: @unchecked Sendable {}
-extension Biscuit_Format_Schema_TermV2.OneOf_Content: @unchecked Sendable {}
+extension Biscuit_Format_Schema_Fact: @unchecked Sendable {}
+extension Biscuit_Format_Schema_Rule: @unchecked Sendable {}
+extension Biscuit_Format_Schema_Check: @unchecked Sendable {}
+extension Biscuit_Format_Schema_Check.Kind: @unchecked Sendable {}
+extension Biscuit_Format_Schema_Predicate: @unchecked Sendable {}
+extension Biscuit_Format_Schema_Term: @unchecked Sendable {}
+extension Biscuit_Format_Schema_Term.OneOf_Content: @unchecked Sendable {}
 extension Biscuit_Format_Schema_TermSet: @unchecked Sendable {}
 extension Biscuit_Format_Schema_Array: @unchecked Sendable {}
 extension Biscuit_Format_Schema_Map: @unchecked Sendable {}
 extension Biscuit_Format_Schema_MapEntry: @unchecked Sendable {}
 extension Biscuit_Format_Schema_MapKey: @unchecked Sendable {}
 extension Biscuit_Format_Schema_MapKey.OneOf_Content: @unchecked Sendable {}
-extension Biscuit_Format_Schema_ExpressionV2: @unchecked Sendable {}
+extension Biscuit_Format_Schema_Expression: @unchecked Sendable {}
 extension Biscuit_Format_Schema_Op: @unchecked Sendable {}
 extension Biscuit_Format_Schema_Op.OneOf_Content: @unchecked Sendable {}
 extension Biscuit_Format_Schema_OpUnary: @unchecked Sendable {}
@@ -1944,17 +1940,17 @@ extension Biscuit_Format_Schema_Block: SwiftProtobuf.Message, SwiftProtobuf._Mes
     1: .same(proto: "symbols"),
     2: .same(proto: "context"),
     3: .same(proto: "version"),
-    4: .standard(proto: "facts_v2"),
-    5: .standard(proto: "rules_v2"),
-    6: .standard(proto: "checks_v2"),
+    4: .same(proto: "facts"),
+    5: .same(proto: "rules"),
+    6: .same(proto: "checks"),
     7: .same(proto: "scope"),
     8: .same(proto: "publicKeys"),
   ]
 
   public var isInitialized: Bool {
-    if !SwiftProtobuf.Internal.areAllInitialized(self.factsV2) {return false}
-    if !SwiftProtobuf.Internal.areAllInitialized(self.rulesV2) {return false}
-    if !SwiftProtobuf.Internal.areAllInitialized(self.checksV2) {return false}
+    if !SwiftProtobuf.Internal.areAllInitialized(self.facts) {return false}
+    if !SwiftProtobuf.Internal.areAllInitialized(self.rules) {return false}
+    if !SwiftProtobuf.Internal.areAllInitialized(self.checks) {return false}
     if !SwiftProtobuf.Internal.areAllInitialized(self.publicKeys) {return false}
     return true
   }
@@ -1968,9 +1964,9 @@ extension Biscuit_Format_Schema_Block: SwiftProtobuf.Message, SwiftProtobuf._Mes
       case 1: try { try decoder.decodeRepeatedStringField(value: &self.symbols) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self._context) }()
       case 3: try { try decoder.decodeSingularUInt32Field(value: &self._version) }()
-      case 4: try { try decoder.decodeRepeatedMessageField(value: &self.factsV2) }()
-      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.rulesV2) }()
-      case 6: try { try decoder.decodeRepeatedMessageField(value: &self.checksV2) }()
+      case 4: try { try decoder.decodeRepeatedMessageField(value: &self.facts) }()
+      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.rules) }()
+      case 6: try { try decoder.decodeRepeatedMessageField(value: &self.checks) }()
       case 7: try { try decoder.decodeRepeatedMessageField(value: &self.scope) }()
       case 8: try { try decoder.decodeRepeatedMessageField(value: &self.publicKeys) }()
       default: break
@@ -1992,14 +1988,14 @@ extension Biscuit_Format_Schema_Block: SwiftProtobuf.Message, SwiftProtobuf._Mes
     try { if let v = self._version {
       try visitor.visitSingularUInt32Field(value: v, fieldNumber: 3)
     } }()
-    if !self.factsV2.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.factsV2, fieldNumber: 4)
+    if !self.facts.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.facts, fieldNumber: 4)
     }
-    if !self.rulesV2.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.rulesV2, fieldNumber: 5)
+    if !self.rules.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.rules, fieldNumber: 5)
     }
-    if !self.checksV2.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.checksV2, fieldNumber: 6)
+    if !self.checks.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.checks, fieldNumber: 6)
     }
     if !self.scope.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.scope, fieldNumber: 7)
@@ -2014,9 +2010,9 @@ extension Biscuit_Format_Schema_Block: SwiftProtobuf.Message, SwiftProtobuf._Mes
     if lhs.symbols != rhs.symbols {return false}
     if lhs._context != rhs._context {return false}
     if lhs._version != rhs._version {return false}
-    if lhs.factsV2 != rhs.factsV2 {return false}
-    if lhs.rulesV2 != rhs.rulesV2 {return false}
-    if lhs.checksV2 != rhs.checksV2 {return false}
+    if lhs.facts != rhs.facts {return false}
+    if lhs.rules != rhs.rules {return false}
+    if lhs.checks != rhs.checks {return false}
     if lhs.scope != rhs.scope {return false}
     if lhs.publicKeys != rhs.publicKeys {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -2091,8 +2087,8 @@ extension Biscuit_Format_Schema_Scope.ScopeType: SwiftProtobuf._ProtoNameProvidi
   ]
 }
 
-extension Biscuit_Format_Schema_FactV2: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".FactV2"
+extension Biscuit_Format_Schema_Fact: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".Fact"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "predicate"),
   ]
@@ -2126,15 +2122,15 @@ extension Biscuit_Format_Schema_FactV2: SwiftProtobuf.Message, SwiftProtobuf._Me
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Biscuit_Format_Schema_FactV2, rhs: Biscuit_Format_Schema_FactV2) -> Bool {
+  static func ==(lhs: Biscuit_Format_Schema_Fact, rhs: Biscuit_Format_Schema_Fact) -> Bool {
     if lhs._predicate != rhs._predicate {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
-extension Biscuit_Format_Schema_RuleV2: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".RuleV2"
+extension Biscuit_Format_Schema_Rule: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".Rule"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "head"),
     2: .same(proto: "body"),
@@ -2185,7 +2181,7 @@ extension Biscuit_Format_Schema_RuleV2: SwiftProtobuf.Message, SwiftProtobuf._Me
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Biscuit_Format_Schema_RuleV2, rhs: Biscuit_Format_Schema_RuleV2) -> Bool {
+  static func ==(lhs: Biscuit_Format_Schema_Rule, rhs: Biscuit_Format_Schema_Rule) -> Bool {
     if lhs._head != rhs._head {return false}
     if lhs.body != rhs.body {return false}
     if lhs.expressions != rhs.expressions {return false}
@@ -2195,8 +2191,8 @@ extension Biscuit_Format_Schema_RuleV2: SwiftProtobuf.Message, SwiftProtobuf._Me
   }
 }
 
-extension Biscuit_Format_Schema_CheckV2: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".CheckV2"
+extension Biscuit_Format_Schema_Check: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".Check"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "queries"),
     2: .same(proto: "kind"),
@@ -2234,7 +2230,7 @@ extension Biscuit_Format_Schema_CheckV2: SwiftProtobuf.Message, SwiftProtobuf._M
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Biscuit_Format_Schema_CheckV2, rhs: Biscuit_Format_Schema_CheckV2) -> Bool {
+  static func ==(lhs: Biscuit_Format_Schema_Check, rhs: Biscuit_Format_Schema_Check) -> Bool {
     if lhs.queries != rhs.queries {return false}
     if lhs._kind != rhs._kind {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -2242,7 +2238,7 @@ extension Biscuit_Format_Schema_CheckV2: SwiftProtobuf.Message, SwiftProtobuf._M
   }
 }
 
-extension Biscuit_Format_Schema_CheckV2.Kind: SwiftProtobuf._ProtoNameProviding {
+extension Biscuit_Format_Schema_Check.Kind: SwiftProtobuf._ProtoNameProviding {
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     0: .same(proto: "One"),
     1: .same(proto: "All"),
@@ -2250,8 +2246,8 @@ extension Biscuit_Format_Schema_CheckV2.Kind: SwiftProtobuf._ProtoNameProviding 
   ]
 }
 
-extension Biscuit_Format_Schema_PredicateV2: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".PredicateV2"
+extension Biscuit_Format_Schema_Predicate: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".Predicate"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "name"),
     2: .same(proto: "terms"),
@@ -2290,7 +2286,7 @@ extension Biscuit_Format_Schema_PredicateV2: SwiftProtobuf.Message, SwiftProtobu
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Biscuit_Format_Schema_PredicateV2, rhs: Biscuit_Format_Schema_PredicateV2) -> Bool {
+  static func ==(lhs: Biscuit_Format_Schema_Predicate, rhs: Biscuit_Format_Schema_Predicate) -> Bool {
     if lhs._name != rhs._name {return false}
     if lhs.terms != rhs.terms {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -2298,8 +2294,8 @@ extension Biscuit_Format_Schema_PredicateV2: SwiftProtobuf.Message, SwiftProtobu
   }
 }
 
-extension Biscuit_Format_Schema_TermV2: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".TermV2"
+extension Biscuit_Format_Schema_Term: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".Term"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "variable"),
     2: .same(proto: "integer"),
@@ -2480,7 +2476,7 @@ extension Biscuit_Format_Schema_TermV2: SwiftProtobuf.Message, SwiftProtobuf._Me
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Biscuit_Format_Schema_TermV2, rhs: Biscuit_Format_Schema_TermV2) -> Bool {
+  static func ==(lhs: Biscuit_Format_Schema_Term, rhs: Biscuit_Format_Schema_Term) -> Bool {
     if lhs.content != rhs.content {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -2707,8 +2703,8 @@ extension Biscuit_Format_Schema_MapKey: SwiftProtobuf.Message, SwiftProtobuf._Me
   }
 }
 
-extension Biscuit_Format_Schema_ExpressionV2: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".ExpressionV2"
+extension Biscuit_Format_Schema_Expression: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".Expression"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "ops"),
   ]
@@ -2737,7 +2733,7 @@ extension Biscuit_Format_Schema_ExpressionV2: SwiftProtobuf.Message, SwiftProtob
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: Biscuit_Format_Schema_ExpressionV2, rhs: Biscuit_Format_Schema_ExpressionV2) -> Bool {
+  static func ==(lhs: Biscuit_Format_Schema_Expression, rhs: Biscuit_Format_Schema_Expression) -> Bool {
     if lhs.ops != rhs.ops {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
@@ -2765,7 +2761,7 @@ extension Biscuit_Format_Schema_Op: SwiftProtobuf.Message, SwiftProtobuf._Messag
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try {
-        var v: Biscuit_Format_Schema_TermV2?
+        var v: Biscuit_Format_Schema_Term?
         var hadOneofValue = false
         if let current = self.content {
           hadOneofValue = true
@@ -3649,17 +3645,17 @@ extension Biscuit_Format_Schema_SnapshotBlock: SwiftProtobuf.Message, SwiftProto
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "context"),
     2: .same(proto: "version"),
-    3: .standard(proto: "facts_v2"),
-    4: .standard(proto: "rules_v2"),
-    5: .standard(proto: "checks_v2"),
+    3: .same(proto: "facts"),
+    4: .same(proto: "rules"),
+    5: .same(proto: "checks"),
     6: .same(proto: "scope"),
     7: .same(proto: "externalKey"),
   ]
 
   public var isInitialized: Bool {
-    if !SwiftProtobuf.Internal.areAllInitialized(self.factsV2) {return false}
-    if !SwiftProtobuf.Internal.areAllInitialized(self.rulesV2) {return false}
-    if !SwiftProtobuf.Internal.areAllInitialized(self.checksV2) {return false}
+    if !SwiftProtobuf.Internal.areAllInitialized(self.facts) {return false}
+    if !SwiftProtobuf.Internal.areAllInitialized(self.rules) {return false}
+    if !SwiftProtobuf.Internal.areAllInitialized(self.checks) {return false}
     if let v = self._externalKey, !v.isInitialized {return false}
     return true
   }
@@ -3672,9 +3668,9 @@ extension Biscuit_Format_Schema_SnapshotBlock: SwiftProtobuf.Message, SwiftProto
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self._context) }()
       case 2: try { try decoder.decodeSingularUInt32Field(value: &self._version) }()
-      case 3: try { try decoder.decodeRepeatedMessageField(value: &self.factsV2) }()
-      case 4: try { try decoder.decodeRepeatedMessageField(value: &self.rulesV2) }()
-      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.checksV2) }()
+      case 3: try { try decoder.decodeRepeatedMessageField(value: &self.facts) }()
+      case 4: try { try decoder.decodeRepeatedMessageField(value: &self.rules) }()
+      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.checks) }()
       case 6: try { try decoder.decodeRepeatedMessageField(value: &self.scope) }()
       case 7: try { try decoder.decodeSingularMessageField(value: &self._externalKey) }()
       default: break
@@ -3693,14 +3689,14 @@ extension Biscuit_Format_Schema_SnapshotBlock: SwiftProtobuf.Message, SwiftProto
     try { if let v = self._version {
       try visitor.visitSingularUInt32Field(value: v, fieldNumber: 2)
     } }()
-    if !self.factsV2.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.factsV2, fieldNumber: 3)
+    if !self.facts.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.facts, fieldNumber: 3)
     }
-    if !self.rulesV2.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.rulesV2, fieldNumber: 4)
+    if !self.rules.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.rules, fieldNumber: 4)
     }
-    if !self.checksV2.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.checksV2, fieldNumber: 5)
+    if !self.checks.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.checks, fieldNumber: 5)
     }
     if !self.scope.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.scope, fieldNumber: 6)
@@ -3714,9 +3710,9 @@ extension Biscuit_Format_Schema_SnapshotBlock: SwiftProtobuf.Message, SwiftProto
   static func ==(lhs: Biscuit_Format_Schema_SnapshotBlock, rhs: Biscuit_Format_Schema_SnapshotBlock) -> Bool {
     if lhs._context != rhs._context {return false}
     if lhs._version != rhs._version {return false}
-    if lhs.factsV2 != rhs.factsV2 {return false}
-    if lhs.rulesV2 != rhs.rulesV2 {return false}
-    if lhs.checksV2 != rhs.checksV2 {return false}
+    if lhs.facts != rhs.facts {return false}
+    if lhs.rules != rhs.rules {return false}
+    if lhs.checks != rhs.checks {return false}
     if lhs.scope != rhs.scope {return false}
     if lhs._externalKey != rhs._externalKey {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}

@@ -66,7 +66,11 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
                 throw Biscuit.ValidationError.invalidSignature
             }
             if let externalSignature = block.externalSignature {
-                try externalSignature.isValidSignature(for: block, lastSig: lastBlock.signature, interner: blockInterner)
+                try externalSignature.isValidSignature(
+                    for: block,
+                    lastSig: lastBlock.signature,
+                    interner: blockInterner
+                )
             }
             lastBlock = block
         }
@@ -77,7 +81,7 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     /// - Returns: the data representation of this Biscuit
     /// - Throws: May throw an error if protobuf serialization fails
     public func serializedData() throws -> Data {
-        return try self.proto().serializedData()
+        try self.proto().serializedData()
     }
 
     func proto() throws -> Biscuit_Format_Schema_Biscuit {

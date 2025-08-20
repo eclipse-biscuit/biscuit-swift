@@ -80,7 +80,7 @@ extension Biscuit {
             context: String? = nil,
             @DatalogBlock using datalog: () throws -> DatalogBlock
         ) throws -> ThirdPartyBlockContents {
-            return try ThirdPartyBlockContents(using: datalog(), privateKey, context, self)
+            try ThirdPartyBlockContents(using: datalog(), privateKey, context, self)
         }
 
         /// Generates a block that can be used to attenuate a Biscuit.
@@ -95,7 +95,7 @@ extension Biscuit {
             privateKey: Key,
             context: String? = nil
         ) throws -> ThirdPartyBlockContents {
-            return try ThirdPartyBlockContents(using: DatalogBlock(datalog), privateKey, context, self)
+            try ThirdPartyBlockContents(using: DatalogBlock(datalog), privateKey, context, self)
         }
 
         public func generateBlock<Key: PrivateKey>(
@@ -103,14 +103,14 @@ extension Biscuit {
             privateKey: Key,
             context: String? = nil
         ) throws -> ThirdPartyBlockContents {
-            return try ThirdPartyBlockContents(using: datalog, privateKey, context, self)
+            try ThirdPartyBlockContents(using: datalog, privateKey, context, self)
         }
 
         /// Serializes this ThirdPartyBlockRequest to its data representation
         /// Returns: the data representation of this ThirdPartyBlockRequest
         /// Throws: May throw a serialization error
         public func serializedData() throws -> Data {
-            return try self.proto.serializedData()
+            try self.proto.serializedData()
         }
 
         var proto: Biscuit_Format_Schema_ThirdPartyBlockRequest {
@@ -141,7 +141,12 @@ extension Biscuit {
             self.externalSignature = try Block.ExternalSignature(proto: proto.externalSignature)
         }
 
-        init<Key: PrivateKey>(using datalog: DatalogBlock, _ key: Key, _ context: String?, _ request: ThirdPartyBlockRequest) throws {
+        init<Key: PrivateKey>(
+            using datalog: DatalogBlock,
+            _ key: Key,
+            _ context: String?,
+            _ request: ThirdPartyBlockRequest
+        ) throws {
             self.interner = BlockInternmentTable()
             self.payload = datalog
             self.payload.attachToBiscuit(interner: &self.interner, context: context)
@@ -157,7 +162,7 @@ extension Biscuit {
         /// Returns: the data representation of this ThirdPartyBlockContents
         /// Throws: May throw a serialization error
         public func serializedData() throws -> Data {
-            return try self.proto().serializedData()
+            try self.proto().serializedData()
         }
 
         func proto() throws -> Biscuit_Format_Schema_ThirdPartyBlockContents {

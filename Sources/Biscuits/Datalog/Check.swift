@@ -11,7 +11,7 @@ import Foundation
 /// A check, contained in a Biscuit or an Authorizer, which must succeed for a biscuit to be valid.
 public struct Check: Sendable, Hashable, CustomStringConvertible {
     // NB: This property must be optional because it didn't originally exist in the
-    // specification; older versions of biscuits will omit the field from their protobuf (whichj
+    // specification; older versions of biscuits will omit the field from their protobuf (which
     // should be interpreted as check if). Because these checks are signed, we need to continue
     // to generate protobuf without a kind for those checks or signature verification will fail.
     let _kind: Kind?
@@ -33,9 +33,9 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
 
         public var description: String {
             switch self.wrapped {
-                case .one: "check if"
-                case .all: "check all"
-                case .reject: "reject if"
+            case .one: "check if"
+            case .all: "check all"
+            case .reject: "reject if"
             }
         }
     }
@@ -113,14 +113,15 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
         self.queries = queries
     }
 
-    init(proto: Biscuit_Format_Schema_CheckV2, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Check, interner: BlockInternmentTable) throws {
         self.queries = try proto.queries.map { try Biscuit.Query(proto: $0, interner: interner) }
         if proto.hasKind {
-            self._kind = switch proto.kind {
+            self._kind =
+                switch proto.kind {
                 case .one: .checkIf
                 case .all: .checkAll
                 case .reject: .rejectIf
-            }
+                }
         } else {
             self._kind = nil
         }
@@ -140,15 +141,16 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
         }
     }
 
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_CheckV2 {
-        var proto = Biscuit_Format_Schema_CheckV2()
+    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Check {
+        var proto = Biscuit_Format_Schema_Check()
         proto.queries = self.queries.map { $0.proto(interner) }
         if let kind = self._kind {
-            proto.kind = switch kind.wrapped {
+            proto.kind =
+                switch kind.wrapped {
                 case .one: .one
                 case .all: .all
                 case .reject: .reject
-            }
+                }
         }
         return proto
     }
@@ -157,6 +159,6 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
     public var kind: Kind { self._kind ?? .checkIf }
 
     public var description: String {
-        return "\(kind) \(queries.map { $0.description }.joined(separator: ", "))"
+        "\(kind) \(queries.map { $0.description }.joined(separator: ", "))"
     }
 }

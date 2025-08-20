@@ -4,6 +4,7 @@
  */
 import Crypto
 import XCTest
+
 @testable import Biscuits
 
 final class BiscuitsTests: XCTestCase {
@@ -106,7 +107,7 @@ final class BiscuitsTests: XCTestCase {
         XCTAssert(block.checks.isEmpty)
         XCTAssert(block.trusted.isEmpty)
         XCTAssert(block.publicKeys.isEmpty)
-        
+
         XCTAssertEqual(block.symbols, ["x", "foo"])
         XCTAssertEqual(block.rules.count, 1)
         let rule = block.rules[0]
@@ -136,7 +137,7 @@ final class BiscuitsTests: XCTestCase {
         XCTAssert(block.rules.isEmpty)
         XCTAssert(block.publicKeys.isEmpty)
         XCTAssert(block.symbols.isEmpty)
-        
+
         XCTAssertEqual(block.trusted, [.previous])
         XCTAssertEqual(block.checks.count, 1)
         let check = block.checks[0]
@@ -162,7 +163,7 @@ final class BiscuitsTests: XCTestCase {
         XCTAssert(block.publicKeys.isEmpty)
         XCTAssert(block.symbols.isEmpty)
         XCTAssert(block.trusted.isEmpty)
-        
+
         XCTAssertEqual(block.checks.count, 1)
         let check = block.checks[0]
         XCTAssertEqual(check.kind, .checkIf)
@@ -178,10 +179,12 @@ final class BiscuitsTests: XCTestCase {
 
     func testDatalogBlockWithEd25519Scope() throws {
         var interner = BlockInternmentTable()
-        var block = try Biscuit.DatalogBlock("""
-            trusting ed25519/0605d9692dd565fa8d70419081e032638fbc6dff5d96d14aeab49bc36a46d6a2;
-            check if user(1234);
-        """)
+        var block = try Biscuit.DatalogBlock(
+            """
+                trusting ed25519/0605d9692dd565fa8d70419081e032638fbc6dff5d96d14aeab49bc36a46d6a2;
+                check if user(1234);
+            """
+        )
         block.attachToBiscuit(interner: &interner, context: nil)
         XCTAssertEqual(block.version, 6)
         XCTAssertEqual(block.context, nil)
@@ -298,22 +301,22 @@ final class BiscuitsTests: XCTestCase {
         let thirdPartyKey = Curve25519.Signing.PrivateKey()
         var biscuit = try Biscuit(
             authorityBlock: """
-                foo("bar");
-                bar("foo");
-            """,
+                    foo("bar");
+                    bar("foo");
+                """,
             rootKey: rootKey
         )
         biscuit = try biscuit.attenuated(
             using: """
-                baz($0) <- bar($0), "foo" == $0;
-                check if foo("bar");
-            """,
+                    baz($0) <- bar($0), "foo" == $0;
+                    check if foo("bar");
+                """,
             thirdPartyKey: thirdPartyKey
         )
         biscuit = try biscuit.attenuated(
             using: """
-                check if baz("foo") trusting previous;
-            """
+                    check if baz("foo") trusting previous;
+                """
         )
         try biscuit.authorize(using: "allow if true;")
     }
@@ -322,12 +325,12 @@ final class BiscuitsTests: XCTestCase {
         let rootKey = Curve25519.Signing.PrivateKey()
         let biscuit = try Biscuit(
             authorityBlock: """
-                resource(0);
-                resource("foo");
-                check if resource($x), $x == "foo";
-                check if resource($x), $x == 0;
-                check all resource($x), $x == 0 || $x == "foo";
-            """,
+                    resource(0);
+                    resource("foo");
+                    check if resource($x), $x == "foo";
+                    check if resource($x), $x == 0;
+                    check all resource($x), $x == 0 || $x == "foo";
+                """,
             rootKey: rootKey
         )
         try biscuit.authorize(using: "allow if true;")
@@ -360,10 +363,10 @@ final class BiscuitsTests: XCTestCase {
         do {
             try attenuatedBiscuit.authorize(using: "allow if true;")
             XCTAssert(false)
-        } catch { }
+        } catch {}
         try attenuatedBiscuit.authorize(using: "group(2); allow if true;")
     }
-    
+
     func testBase64URLEncoding() throws {
         // Generated with biscuit-cli by running:
         //   $ biscuit keypair --only-private-key --key-algorithm ed25519
@@ -373,14 +376,15 @@ final class BiscuitsTests: XCTestCase {
         )
         // Generated with biscuit-cli, by running this (with private key from above `biscuit keypair` command):
         //   $ echo 'flavor("buttermilk")' | biscuit generate --private-key "ed25519/ffedda2d87d1735763a707838833f3539b4a0d6cd53c6ded31875162ca0b8e83" -
-        let encodedBiscuit = "EowBCiIKBmZsYXZvcgoKYnV0dGVybWlsaxgDIgoKCAiACBIDGIEIEiQIABIgl0EWCFozow3RiEOtTcpY0O7ZADutOWZZ3wTJ0QKx5XMaQI4VPeolN94zLHxvP0JDvSuBeMe3wGmkcsD32u2wGegMdQiK78hiNclVjUr_9MOlHEr72kPIPiTQNXmk6AvlEggiIgogRWH7vgsJR3d8xreGt_8Trodp4x9eRZSgbBvDQzUeh9s="
-        
+        let encodedBiscuit =
+            "EowBCiIKBmZsYXZvcgoKYnV0dGVybWlsaxgDIgoKCAiACBIDGIEIEiQIABIgl0EWCFozow3RiEOtTcpY0O7ZADutOWZZ3wTJ0QKx5XMaQI4VPeolN94zLHxvP0JDvSuBeMe3wGmkcsD32u2wGegMdQiK78hiNclVjUr_9MOlHEr72kPIPiTQNXmk6AvlEggiIgogRWH7vgsJR3d8xreGt_8Trodp4x9eRZSgbBvDQzUeh9s="
+
         // Make sure we can construct the biscuit, and verify it was signed with our private key.
         let biscuit = try Biscuit(
             base64URLEncoded: encodedBiscuit,
             rootKey: rootPrivateKey.publicKey
         )
-                       
+
         // Now re-encode the biscuit and make sure we arrive at the same thing we started with.
         XCTAssertEqual(try biscuit.base64URLEncoded(), encodedBiscuit)
     }
@@ -393,8 +397,8 @@ final class BiscuitsTests: XCTestCase {
             Check.checkAll { Predicate("foo", true) }
         }
         do {
-            try biscuit.authorize() { Policy.alwaysAllow }
+            try biscuit.authorize { Policy.alwaysAllow }
             XCTAssert(false)
-        } catch { }
+        } catch {}
     }
 }

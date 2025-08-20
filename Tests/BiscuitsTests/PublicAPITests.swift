@@ -1,10 +1,10 @@
+import Biscuits
 /*
  * Copyright (c) 2025 Contributors to the Eclipse Foundation.
  * SPDX-License-Identifier: Apache-2.0
  */
 import Crypto
 import XCTest
-import Biscuits
 
 final class PublicAPITests: XCTestCase {
     func testAttenuatingAndAuthorizingABiscuit() throws {
@@ -17,14 +17,14 @@ final class PublicAPITests: XCTestCase {
         }
 
         // Create an attenuated token which is only valid for read operations
-        let attenuatedReadToken = try userToken.attenuated() {
+        let attenuatedReadToken = try userToken.attenuated {
             Check.checkIf {
                 Predicate("operation", "read")
             }
         }
 
         // Authorize the attenuated token for a read operation (should succeed)
-        try attenuatedReadToken.authorize() {
+        try attenuatedReadToken.authorize {
             Fact("operation", "read")
             Policy.allowIf {
                 Predicate("user", userID)
@@ -32,7 +32,7 @@ final class PublicAPITests: XCTestCase {
         }
 
         // Authorize the unattenuated token for a read operation (should succeed)
-        try userToken.authorize() {
+        try userToken.authorize {
             Fact("operation", "read")
             Policy.allowIf {
                 Predicate("user", userID)
@@ -40,7 +40,7 @@ final class PublicAPITests: XCTestCase {
         }
 
         // Authorize the unattenuated token for a write operation (should succeed)
-        try userToken.authorize() {
+        try userToken.authorize {
             Fact("operation", "write")
             Policy.allowIf {
                 Predicate("user", userID)
@@ -49,7 +49,7 @@ final class PublicAPITests: XCTestCase {
 
         // Authorize the attenuated token for a write operation (should fail)
         do {
-            try attenuatedReadToken.authorize() {
+            try attenuatedReadToken.authorize {
                 Fact("operation", "write")
                 Policy.allowIf {
                     Predicate("user", userID)
@@ -62,7 +62,7 @@ final class PublicAPITests: XCTestCase {
 
         // Authorize the attenuated token for a different user (should fail)
         do {
-            try attenuatedReadToken.authorize() {
+            try attenuatedReadToken.authorize {
                 Fact("operation", "read")
                 Policy.allowIf {
                     Predicate("user", userID + 1)
@@ -82,7 +82,7 @@ final class PublicAPITests: XCTestCase {
             Fact("user", userID)
         }
 
-        let attenuatedReadToken = try! userToken.attenuated() {
+        let attenuatedReadToken = try! userToken.attenuated {
             Check.checkIf {
                 Predicate("operation", "read")
             }
@@ -92,7 +92,7 @@ final class PublicAPITests: XCTestCase {
 
         // Sealed tokens may not be attenuated further
         do {
-            let _ = try sealedReadToken.attenuated() {
+            let _ = try sealedReadToken.attenuated {
                 Fact("group", "admin")
             }
         } catch _ as Biscuit.AttenuationError {
@@ -120,7 +120,7 @@ final class PublicAPITests: XCTestCase {
         // Authorize both tokens; only the attenuated should succeed because it has the admin group
         // fact signed by the htird party key
         do {
-            try userToken.authorize() {
+            try userToken.authorize {
                 Check.checkIf(trusting: thirdPartyPublicKey) {
                     Predicate("group", "admin")
                 }
@@ -136,7 +136,7 @@ final class PublicAPITests: XCTestCase {
             )
         }
 
-        try attenuatedToken.authorize() {
+        try attenuatedToken.authorize {
             Check.checkIf(trusting: thirdPartyPublicKey) {
                 Predicate("group", "admin")
             }
@@ -161,7 +161,7 @@ final class PublicAPITests: XCTestCase {
             rootKey: signingKey.publicKey
         )
 
-        try deserializedToken.authorize() {
+        try deserializedToken.authorize {
             Policy.allowIf {
                 Predicate("user", userID)
             }

@@ -5,6 +5,7 @@
 import Crypto
 import SwiftProtobuf
 import XCTest
+
 @testable import Biscuits
 
 final class GenerationTests: XCTestCase {
@@ -68,16 +69,16 @@ final class GenerationTests: XCTestCase {
     func testBasicToken() throws {
         var biscuit = try Biscuit(
             authorityBlock: """
-                right("file1", "read");
-                right("file2", "read");
-                right("file1", "write");
-            """,
+                    right("file1", "read");
+                    right("file2", "read");
+                    right("file1", "write");
+                """,
             rootKey: self.rootPrivateKey
         )
         biscuit = try biscuit.attenuated(
             using: """
-                check if resource($0), operation("read"), right($0, "read");
-            """
+                    check if resource($0), operation("read"), right($0, "read");
+                """
         )
         try compareBiscuit(biscuit, with: "test001_basic")
     }
@@ -88,7 +89,7 @@ final class GenerationTests: XCTestCase {
             Fact("right", "file2", "read")
             Fact("right", "file1", "write")
         }
-        biscuit = try biscuit.attenuated() {
+        biscuit = try biscuit.attenuated {
             Check.checkIf {
                 Predicate("resource", Term(variable: "0"))
                 Predicate("operation", "read")
@@ -101,21 +102,21 @@ final class GenerationTests: XCTestCase {
     func testScopedRules() throws {
         var biscuit = try Biscuit(
             authorityBlock: """
-                user_id("alice");
-                owner("alice", "file1");
-            """,
+                    user_id("alice");
+                    owner("alice", "file1");
+                """,
             rootKey: self.rootPrivateKey
-            )
-        biscuit = try biscuit.attenuated(
-            using: """
-                right($0, "read") <- resource($0), user_id($1), owner($1, $0);
-                check if resource($0), operation("read"), right($0, "read");
-            """
         )
         biscuit = try biscuit.attenuated(
             using: """
-                owner("alice", "file2");
-            """
+                    right($0, "read") <- resource($0), user_id($1), owner($1, $0);
+                    check if resource($0), operation("read"), right($0, "read");
+                """
+        )
+        biscuit = try biscuit.attenuated(
+            using: """
+                    owner("alice", "file2");
+                """
         )
         try compareBiscuit(biscuit, with: "test007_scoped_rules")
     }
@@ -125,7 +126,7 @@ final class GenerationTests: XCTestCase {
             Fact("user_id", "alice")
             Fact("owner", "alice", "file1")
         }
-        biscuit = try biscuit.attenuated() {
+        biscuit = try biscuit.attenuated {
             try Rule(head: Predicate("right", Term(variable: "0"), "read")) {
                 Predicate("resource", Term(variable: "0"))
                 Predicate("user_id", Term(variable: "1"))
@@ -137,7 +138,7 @@ final class GenerationTests: XCTestCase {
                 Predicate("right", Term(variable: "0"), "read")
             }
         }
-        biscuit = try biscuit.attenuated() {
+        biscuit = try biscuit.attenuated {
             Fact("owner", "alice", "file2")
         }
         try compareBiscuit(biscuit, with: "test007_scoped_rules")
@@ -146,20 +147,20 @@ final class GenerationTests: XCTestCase {
     func testScopedChecks() throws {
         var biscuit = try Biscuit(
             authorityBlock: """
-            right("file1", "read");
-            """,
+                right("file1", "read");
+                """,
             rootKey: self.rootPrivateKey
         )
         biscuit = try biscuit.attenuated(
-                using: """
+            using: """
                 check if resource($0), operation("read"), right($0, "read");
                 """
-                )
+        )
         biscuit = try biscuit.attenuated(
-                using: """
+            using: """
                 right("file2", "read");
                 """
-                )
+        )
         try compareBiscuit(biscuit, with: "test008_scoped_checks")
     }
 
@@ -167,14 +168,14 @@ final class GenerationTests: XCTestCase {
         var biscuit = try Biscuit(rootKey: self.rootPrivateKey) {
             Fact("right", "file1", "read")
         }
-        biscuit = try biscuit.attenuated() {
+        biscuit = try biscuit.attenuated {
             Check.checkIf {
                 Predicate("resource", Term(variable: "0"))
                 Predicate("operation", "read")
                 Predicate("right", Term(variable: "0"), "read")
             }
         }
-        biscuit = try biscuit.attenuated() {
+        biscuit = try biscuit.attenuated {
             Fact("right", "file2", "read")
         }
         try compareBiscuit(biscuit, with: "test008_scoped_checks")
@@ -187,17 +188,17 @@ final class GenerationTests: XCTestCase {
         )
         biscuit = try biscuit.attenuated(
             using: """
-                check if resource("file1");
-                check if time($time), $time <= 2018-12-20T00:00:00Z;
-            """
+                    check if resource("file1");
+                    check if time($time), $time <= 2018-12-20T00:00:00Z;
+                """
         )
         try compareBiscuit(biscuit, with: "test009_expired_token")
     }
 
     func testExpiredTokenDSL() throws {
         let date = ISO8601DateFormatter().date(from: "2018-12-20T00:00:00Z")!
-        var biscuit = try Biscuit(rootKey: self.rootPrivateKey) { }
-        biscuit = try biscuit.attenuated() {
+        var biscuit = try Biscuit(rootKey: self.rootPrivateKey) {}
+        biscuit = try biscuit.attenuated {
             Check.checkIf { Predicate("resource", "file1") }
             Check.checkIf {
                 Predicate("time", Term(variable: "time"))
@@ -210,8 +211,8 @@ final class GenerationTests: XCTestCase {
     func testRegexConstraint() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                check if resource($0), $0.matches("file[0-9]+.txt");
-            """,
+                    check if resource($0), $0.matches("file[0-9]+.txt");
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test014_regex_constraint")
@@ -227,50 +228,49 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test014_regex_constraint")
     }
 
-
     func testExpressions() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                check if true;
-                check if !false;
-                check if true === true;
-                check if false === false;
-                check if 1 < 2;
-                check if 2 > 1;
-                check if 1 <= 2;
-                check if 1 <= 1;
-                check if 2 >= 1;
-                check if 2 >= 2;
-                check if 3 === 3;
-                check if 1 + 2 * 3 - 4 / 2 === 5;
-                check if "hello world".starts_with("hello"), "hello world".ends_with("world");
-                check if "aaabde".matches("a*c?.e");
-                check if "aaabde".contains("abd");
-                check if "aaabde" === "aaa" + "b" + "de";
-                check if "abcD12" === "abcD12";
-                check if "abcD12".length() === 6;
-                check if "é".length() === 2;
-                check if 2019-12-04T09:46:41Z < 2020-12-04T09:46:41Z;
-                check if 2020-12-04T09:46:41Z > 2019-12-04T09:46:41Z;
-                check if 2019-12-04T09:46:41Z <= 2020-12-04T09:46:41Z;
-                check if 2020-12-04T09:46:41Z >= 2020-12-04T09:46:41Z;
-                check if 2020-12-04T09:46:41Z >= 2019-12-04T09:46:41Z;
-                check if 2020-12-04T09:46:41Z >= 2020-12-04T09:46:41Z;
-                check if 2020-12-04T09:46:41Z === 2020-12-04T09:46:41Z;
-                check if hex:12ab === hex:12ab;
-                check if {1, 2}.contains(2);
-                check if {2019-12-04T09:46:41Z, 2020-12-04T09:46:41Z}.contains(2020-12-04T09:46:41Z);
-                check if {false, true}.contains(true);
-                check if {"abc", "def"}.contains("abc");
-                check if {hex:12ab, hex:34de}.contains(hex:34de);
-                check if {1, 2}.contains({2});
-                check if {1, 2} === {1, 2};
-                check if {1, 2}.intersection({2, 3}) === {2};
-                check if {1, 2}.union({2, 3}) === {1, 2, 3};
-                check if {1, 2, 3}.intersection({1, 2}).contains(1);
-                check if {1, 2, 3}.intersection({1, 2}).length() === 2;
-                check if {,}.length() === 0;
-            """,
+                    check if true;
+                    check if !false;
+                    check if true === true;
+                    check if false === false;
+                    check if 1 < 2;
+                    check if 2 > 1;
+                    check if 1 <= 2;
+                    check if 1 <= 1;
+                    check if 2 >= 1;
+                    check if 2 >= 2;
+                    check if 3 === 3;
+                    check if 1 + 2 * 3 - 4 / 2 === 5;
+                    check if "hello world".starts_with("hello"), "hello world".ends_with("world");
+                    check if "aaabde".matches("a*c?.e");
+                    check if "aaabde".contains("abd");
+                    check if "aaabde" === "aaa" + "b" + "de";
+                    check if "abcD12" === "abcD12";
+                    check if "abcD12".length() === 6;
+                    check if "é".length() === 2;
+                    check if 2019-12-04T09:46:41Z < 2020-12-04T09:46:41Z;
+                    check if 2020-12-04T09:46:41Z > 2019-12-04T09:46:41Z;
+                    check if 2019-12-04T09:46:41Z <= 2020-12-04T09:46:41Z;
+                    check if 2020-12-04T09:46:41Z >= 2020-12-04T09:46:41Z;
+                    check if 2020-12-04T09:46:41Z >= 2019-12-04T09:46:41Z;
+                    check if 2020-12-04T09:46:41Z >= 2020-12-04T09:46:41Z;
+                    check if 2020-12-04T09:46:41Z === 2020-12-04T09:46:41Z;
+                    check if hex:12ab === hex:12ab;
+                    check if {1, 2}.contains(2);
+                    check if {2019-12-04T09:46:41Z, 2020-12-04T09:46:41Z}.contains(2020-12-04T09:46:41Z);
+                    check if {false, true}.contains(true);
+                    check if {"abc", "def"}.contains("abc");
+                    check if {hex:12ab, hex:34de}.contains(hex:34de);
+                    check if {1, 2}.contains({2});
+                    check if {1, 2} === {1, 2};
+                    check if {1, 2}.intersection({2, 3}) === {2};
+                    check if {1, 2}.union({2, 3}) === {1, 2, 3};
+                    check if {1, 2, 3}.intersection({1, 2}).contains(1);
+                    check if {1, 2, 3}.intersection({1, 2}).length() === 2;
+                    check if {,}.length() === 0;
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test017_expressions")
@@ -358,35 +358,35 @@ final class GenerationTests: XCTestCase {
     func testDefaultSymbols() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                read(0);
-                write(1);
-                resource(2);
-                operation(3);
-                right(4);
-                time(5);
-                role(6);
-                owner(7);
-                tenant(8);
-                namespace(9);
-                user(10);
-                team(11);
-                service(12);
-                admin(13);
-                email(14);
-                group(15);
-                member(16);
-                ip_address(17);
-                client(18);
-                client_ip(19);
-                domain(20);
-                path(21);
-                version(22);
-                cluster(23);
-                node(24);
-                hostname(25);
-                nonce(26);
-                query(27);
-            """,
+                    read(0);
+                    write(1);
+                    resource(2);
+                    operation(3);
+                    right(4);
+                    time(5);
+                    role(6);
+                    owner(7);
+                    tenant(8);
+                    namespace(9);
+                    user(10);
+                    team(11);
+                    service(12);
+                    admin(13);
+                    email(14);
+                    group(15);
+                    member(16);
+                    ip_address(17);
+                    client(18);
+                    client_ip(19);
+                    domain(20);
+                    path(21);
+                    version(22);
+                    cluster(23);
+                    node(24);
+                    hostname(25);
+                    nonce(26);
+                    query(27);
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test022_default_symbols")
@@ -395,16 +395,16 @@ final class GenerationTests: XCTestCase {
     func testThirdParty() throws {
         var biscuit = try Biscuit(
             authorityBlock: """
-                right("read");
-                check if group("admin") trusting ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
-            """,
+                    right("read");
+                    check if group("admin") trusting ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
+                """,
             rootKey: self.rootPrivateKey
         )
         biscuit = try biscuit.attenuated(
             using: """
-                group("admin");
-                check if right("read");
-            """,
+                    group("admin");
+                    check if right("read");
+                """,
             thirdPartyKey: Curve25519.Signing.PrivateKey()
         )
         try compareBiscuit(biscuit, with: "test024_third_party")
@@ -413,9 +413,9 @@ final class GenerationTests: XCTestCase {
     func testCheckAll() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                allowed_operations({"A", "B"});
-                check all operation($op), allowed_operations($allowed), $allowed.contains($op);
-            """,
+                    allowed_operations({"A", "B"});
+                    check all operation($op), allowed_operations($allowed), $allowed.contains($op);
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test025_check_all")
@@ -436,42 +436,42 @@ final class GenerationTests: XCTestCase {
     func testPublicKeysInterning() throws {
         var biscuit = try Biscuit(
             authorityBlock: """
-                query(0);
-                check if true trusting previous, ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
-            """,
+                    query(0);
+                    check if true trusting previous, ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
+                """,
             rootKey: self.rootPrivateKey
         )
         biscuit = try biscuit.attenuated(
             using: """
-                query(1);
-                query(1, 2) <- query(1), query(2) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
-                check if query(2), query(3) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
-                check if query(1) trusting ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
-            """,
+                    query(1);
+                    query(1, 2) <- query(1), query(2) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
+                    check if query(2), query(3) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
+                    check if query(1) trusting ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
+                """,
             thirdPartyKey: Curve25519.Signing.PrivateKey()
         )
         biscuit = try biscuit.attenuated(
             using: """
-                query(2);
-                check if query(2), query(3) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
-                check if query(1) trusting ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
-            """,
+                    query(2);
+                    check if query(2), query(3) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
+                    check if query(1) trusting ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
+                """,
             thirdPartyKey: Curve25519.Signing.PrivateKey()
         )
         biscuit = try biscuit.attenuated(
             using: """
-                query(3);
-                check if query(2), query(3) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
-                check if query(1) trusting ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
-            """,
+                    query(3);
+                    check if query(2), query(3) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
+                    check if query(1) trusting ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
+                """,
             thirdPartyKey: Curve25519.Signing.PrivateKey()
         )
         biscuit = try biscuit.attenuated(
             using: """
-                query(4);
-                check if query(2) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
-                check if query(4) trusting ed25519/f98da8c1cf907856431bfc3dc87531e0eaadba90f919edc232405b85877ef136;
-            """
+                    query(4);
+                    check if query(2) trusting ed25519/a060270db7e9c9f06e8f9cc33a64e99f6596af12cb01c4b638df8afc7b642463;
+                    check if query(4) trusting ed25519/f98da8c1cf907856431bfc3dc87531e0eaadba90f919edc232405b85877ef136;
+                """
         )
         try compareBiscuit(biscuit, with: "test026_public_keys_interning")
     }
@@ -527,7 +527,7 @@ final class GenerationTests: XCTestCase {
                 query(1)
             }
         }
-        biscuit = try biscuit.attenuated() {
+        biscuit = try biscuit.attenuated {
             queryFact(4)
             Check.checkIf(trusting: key2) {
                 query(2)
@@ -542,10 +542,10 @@ final class GenerationTests: XCTestCase {
     func testIntegerWraparound() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                check if 10000000000 * 10000000000 !== 0;
-                check if 9223372036854775807 + 1 !== 0;
-                check if -9223372036854775808 - 1 !== 0;
-            """,
+                    check if 10000000000 * 10000000000 !== 0;
+                    check if 9223372036854775807 + 1 !== 0;
+                    check if -9223372036854775808 - 1 !== 0;
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test027_integer_wraparound")
@@ -554,13 +554,13 @@ final class GenerationTests: XCTestCase {
     func testExpressionsV4() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                check if 1 !== 3;
-                check if 1 | 2 ^ 3 === 0;
-                check if "abcD12x" !== "abcD12";
-                check if 2022-12-04T09:46:41Z !== 2020-12-04T09:46:41Z;
-                check if hex:12abcd !== hex:12ab;
-                check if {1, 4} !== {1, 2};
-            """,
+                    check if 1 !== 3;
+                    check if 1 | 2 ^ 3 === 0;
+                    check if "abcD12x" !== "abcD12";
+                    check if 2022-12-04T09:46:41Z !== 2020-12-04T09:46:41Z;
+                    check if hex:12abcd !== hex:12ab;
+                    check if {1, 4} !== {1, 2};
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test028_expressions_v4")
@@ -587,9 +587,9 @@ final class GenerationTests: XCTestCase {
     func testNull() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                check if fact(null, $value), $value == null;
-                reject if fact(null, $value), $value != null;
-            """,
+                    check if fact(null, $value), $value == null;
+                    reject if fact(null, $value), $value != null;
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test030_null")
@@ -611,18 +611,18 @@ final class GenerationTests: XCTestCase {
 
     func testLazinessClosures() throws {
         let biscuit = try Biscuit(
-        authorityBlock: """
-                check if !false && true;
-                check if false || true;
-                check if (true || false) && true;
-                check if !(false && "x".intersection("x"));
-                check if true || "x".intersection("x");
-                check if {1, 2, 3}.all($p -> $p > 0);
-                check if !{1, 2, 3}.all($p -> $p == 2);
-                check if {1, 2, 3}.any($p -> $p > 2);
-                check if !{1, 2, 3}.any($p -> $p > 3);
-                check if {1, 2, 3}.any($p -> $p > 1 && {3, 4, 5}.any($q -> $p == $q));
-            """,
+            authorityBlock: """
+                    check if !false && true;
+                    check if false || true;
+                    check if (true || false) && true;
+                    check if !(false && "x".intersection("x"));
+                    check if true || "x".intersection("x");
+                    check if {1, 2, 3}.all($p -> $p > 0);
+                    check if !{1, 2, 3}.all($p -> $p == 2);
+                    check if {1, 2, 3}.any($p -> $p > 2);
+                    check if !{1, 2, 3}.any($p -> $p > 3);
+                    check if {1, 2, 3}.any($p -> $p > 1 && {3, 4, 5}.any($q -> $p == $q));
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test032_laziness_closures")
@@ -648,11 +648,19 @@ final class GenerationTests: XCTestCase {
                 try Value.set(1, 2, 3).any(Closure("p", body: Term(variable: "p").greaterThan(3))).negated
             }
             try Check.checkIf {
-                try Value.set(1, 2, 3).any(Closure("p", body: Term(variable: "p").greaterThan(1).and(
-                    try Value.set(3, 4, 5).any(Closure("q",
-                        body: Term(variable: "p").equal(Term(variable: "q"))
-                    ))
-                )))
+                try Value.set(1, 2, 3).any(
+                    Closure(
+                        "p",
+                        body: Term(variable: "p").greaterThan(1).and(
+                            try Value.set(3, 4, 5).any(
+                                Closure(
+                                    "q",
+                                    body: Term(variable: "p").equal(Term(variable: "q"))
+                                )
+                            )
+                        )
+                    )
+                )
             }
         }
         try compareBiscuit(biscuit, with: "test032_laziness_closures")
@@ -661,32 +669,32 @@ final class GenerationTests: XCTestCase {
     func testTypeOf() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                integer(1);
-                string("test");
-                date(2023-12-28T00:00:00Z);
-                bytes(hex:aa);
-                bool(true);
-                set({false, true});
-                null(null);
-                array([1, 2, 3]);
-                map({"a": true});
-                check if 1.type() == "integer";
-                check if integer($t), $t.type() == "integer";
-                check if "test".type() == "string";
-                check if string($t), $t.type() == "string";
-                check if (2023-12-28T00:00:00Z).type() == "date";
-                check if date($t), $t.type() == "date";
-                check if hex:aa.type() == "bytes";
-                check if bytes($t), $t.type() == "bytes";
-                check if true.type() == "bool";
-                check if bool($t), $t.type() == "bool";
-                check if {false, true}.type() == "set";
-                check if set($t), $t.type() == "set";
-                check if null.type() == "null";
-                check if null($t), $t.type() == "null";
-                check if array($t), $t.type() == "array";
-                check if map($t), $t.type() == "map";
-            """,
+                    integer(1);
+                    string("test");
+                    date(2023-12-28T00:00:00Z);
+                    bytes(hex:aa);
+                    bool(true);
+                    set({false, true});
+                    null(null);
+                    array([1, 2, 3]);
+                    map({"a": true});
+                    check if 1.type() == "integer";
+                    check if integer($t), $t.type() == "integer";
+                    check if "test".type() == "string";
+                    check if string($t), $t.type() == "string";
+                    check if (2023-12-28T00:00:00Z).type() == "date";
+                    check if date($t), $t.type() == "date";
+                    check if hex:aa.type() == "bytes";
+                    check if bytes($t), $t.type() == "bytes";
+                    check if true.type() == "bool";
+                    check if bool($t), $t.type() == "bool";
+                    check if {false, true}.type() == "set";
+                    check if set($t), $t.type() == "set";
+                    check if null.type() == "null";
+                    check if null($t), $t.type() == "null";
+                    check if array($t), $t.type() == "array";
+                    check if map($t), $t.type() == "map";
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test033_typeof")
@@ -695,34 +703,34 @@ final class GenerationTests: XCTestCase {
     func testArrayMap() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                check if [1, 2, 1].length() == 3;
-                check if ["a", "b"] != true;
-                check if ["a", "b"] != [1, 2, 3];
-                check if ["a", "b"] == ["a", "b"];
-                check if ["a", "b"] === ["a", "b"];
-                check if ["a", "b"] !== ["a", "c"];
-                check if ["a", "b", "c"].contains("c");
-                check if [1, 2, 3].starts_with([1, 2]);
-                check if [4, 5, 6].ends_with([6]);
-                check if [1, 2, "a"].get(2) == "a";
-                check if [1, 2].get(3) == null;
-                check if [1, 2, 3].all($p -> $p > 0);
-                check if [1, 2, 3].any($p -> $p > 2);
-                check if {"a": 1, "b": 2, "c": 3, "d": 4}.length() == 4;
-                check if {1: "a", 2: "b"} != true;
-                check if {1: "a", 2: "b"} != {"a": 1, "b": 2};
-                check if {1: "a", 2: "b"} == {1: "a", 2: "b"};
-                check if {1: "a", 2: "b"} !== {"a": 1, "b": 2};
-                check if {1: "a", 2: "b"} === {1: "a", 2: "b"};
-                check if {"a": 1, "b": 2, "c": 3, "d": 4}.contains("d");
-                check if {1: "A", "a": 1, "b": 2}.get("a") == 1;
-                check if {1: "A", "a": 1, "b": 2}.get(1) == "A";
-                check if {1: "A", "a": 1, "b": 2}.get("c") == null;
-                check if {1: "A", "a": 1, "b": 2}.get(2) == null;
-                check if {"a": 1, "b": 2}.all($kv -> $kv.get(0) != "c" && $kv.get(1) < 3);
-                check if {1: "A", "a": 1, "b": 2}.any($kv -> $kv.get(0) == 1 && $kv.get(1) == "A");
-                check if {"user": {"id": 1, "roles": ["admin"]}}.get("user").get("roles").contains("admin");
-            """,
+                    check if [1, 2, 1].length() == 3;
+                    check if ["a", "b"] != true;
+                    check if ["a", "b"] != [1, 2, 3];
+                    check if ["a", "b"] == ["a", "b"];
+                    check if ["a", "b"] === ["a", "b"];
+                    check if ["a", "b"] !== ["a", "c"];
+                    check if ["a", "b", "c"].contains("c");
+                    check if [1, 2, 3].starts_with([1, 2]);
+                    check if [4, 5, 6].ends_with([6]);
+                    check if [1, 2, "a"].get(2) == "a";
+                    check if [1, 2].get(3) == null;
+                    check if [1, 2, 3].all($p -> $p > 0);
+                    check if [1, 2, 3].any($p -> $p > 2);
+                    check if {"a": 1, "b": 2, "c": 3, "d": 4}.length() == 4;
+                    check if {1: "a", 2: "b"} != true;
+                    check if {1: "a", 2: "b"} != {"a": 1, "b": 2};
+                    check if {1: "a", 2: "b"} == {1: "a", 2: "b"};
+                    check if {1: "a", 2: "b"} !== {"a": 1, "b": 2};
+                    check if {1: "a", 2: "b"} === {1: "a", 2: "b"};
+                    check if {"a": 1, "b": 2, "c": 3, "d": 4}.contains("d");
+                    check if {1: "A", "a": 1, "b": 2}.get("a") == 1;
+                    check if {1: "A", "a": 1, "b": 2}.get(1) == "A";
+                    check if {1: "A", "a": 1, "b": 2}.get("c") == null;
+                    check if {1: "A", "a": 1, "b": 2}.get(2) == null;
+                    check if {"a": 1, "b": 2}.all($kv -> $kv.get(0) != "c" && $kv.get(1) < 3);
+                    check if {1: "A", "a": 1, "b": 2}.any($kv -> $kv.get(0) == 1 && $kv.get(1) == "A");
+                    check if {"user": {"id": 1, "roles": ["admin"]}}.get("user").get("roles").contains("admin");
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test034_array_map")
@@ -731,10 +739,10 @@ final class GenerationTests: XCTestCase {
     func testTryOr() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
-                check if (true === 12).try_or(true);
-                check if ((true === 12).try_or(true === 12)).try_or(true);
-                reject if (true == 12).try_or(true);
-            """,
+                    check if (true === 12).try_or(true);
+                    check if ((true === 12).try_or(true === 12)).try_or(true);
+                    reject if (true == 12).try_or(true);
+                """,
             rootKey: self.rootPrivateKey
         )
         try compareBiscuit(biscuit, with: "test038_try_op")
@@ -746,7 +754,8 @@ final class GenerationTests: XCTestCase {
                 Term(value: true).strictEqual(12).parenthesized.tryOr(true)
             }
             Check.checkIf {
-                Term(value: true).strictEqual(12).parenthesized.tryOr(Term(value: true).strictEqual(12)).parenthesized.tryOr(true)
+                Term(value: true).strictEqual(12).parenthesized.tryOr(Term(value: true).strictEqual(12)).parenthesized
+                    .tryOr(true)
             }
             Check.rejectIf {
                 Term(value: true).equal(12).parenthesized.tryOr(true)

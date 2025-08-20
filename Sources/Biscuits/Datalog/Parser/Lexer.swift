@@ -30,23 +30,22 @@ enum Keyword: Hashable {
 
     var name: String {
         switch self {
-            case .kwAll: "all"
-            case .kwAllow: "allow"
-            case .kwAuthority: "authority"
-            case .kwCheck: "check"
-            case .kwDeny: "deny"
-            case .kwFalse: "false"
-            case .kwIf: "if"
-            case .kwOr: "or"
-            case .kwNull: "null"
-            case .kwPrevious: "previous"
-            case .kwReject: "reject"
-            case .kwTrue: "true"
-            case .kwTrusting: "trusting"
+        case .kwAll: "all"
+        case .kwAllow: "allow"
+        case .kwAuthority: "authority"
+        case .kwCheck: "check"
+        case .kwDeny: "deny"
+        case .kwFalse: "false"
+        case .kwIf: "if"
+        case .kwOr: "or"
+        case .kwNull: "null"
+        case .kwPrevious: "previous"
+        case .kwReject: "reject"
+        case .kwTrue: "true"
+        case .kwTrusting: "trusting"
         }
     }
 }
-
 
 struct Lexer {
     var input: Substring
@@ -93,7 +92,8 @@ struct Lexer {
     }
 }
 
-let regexes: [(Regex, (Substring) throws -> Token?)] = [
+// SAFETY: Contains no mutable state
+nonisolated(unsafe) let regexes: [(Regex, (Substring) throws -> Token?)] = [
     // punctuation:
     (/(!)/, { _ in .ptBang }),
     (/(!=)/, { _ in .ptBangEq }),
@@ -136,12 +136,18 @@ let regexes: [(Regex, (Substring) throws -> Token?)] = [
     (/(-?\d+)/, { data in .number(Int64(data)!) }),
 
     // public key:
-    (/ed25519\/([\da-f]+)/, { data in
-        .publicKey(Biscuit.ThirdPartyKey(dataRepresentation: hexDecode(data)!, algorithm: .ed25519))
-    }),
-    (/secp256r1\/([\da-f]+)/, { data in
-        .publicKey(Biscuit.ThirdPartyKey(dataRepresentation: hexDecode(data)!, algorithm: .secp256r1))
-    }),
+    (
+        /ed25519\/([\da-f]+)/,
+        { data in
+            .publicKey(Biscuit.ThirdPartyKey(dataRepresentation: hexDecode(data)!, algorithm: .ed25519))
+        }
+    ),
+    (
+        /secp256r1\/([\da-f]+)/,
+        { data in
+            .publicKey(Biscuit.ThirdPartyKey(dataRepresentation: hexDecode(data)!, algorithm: .secp256r1))
+        }
+    ),
 
     // FIXME: don't support currently escaped quotation marks in strings
     // FIXME: don't currently unescape any other escape sequences (newlines, tabs, etc)
@@ -207,17 +213,17 @@ func htoi(_ value: UInt8) -> UInt8? {
     let charA = UInt8(UnicodeScalar("a").value)
 
     switch value {
-        case char0...char0 + 9:
-            return value - char0
-        case charA...charA + 5:
-            return value - charA + 10
-        default:
-            return nil
+    case char0...char0 + 9:
+        return value - char0
+    case charA...charA + 5:
+        return value - charA + 10
+    default:
+        return nil
     }
 }
 
 func date(_ s: Substring) -> Token? {
-    if let date = ISO8601DateFormatter().date(from: String(s)) {
+    if let date = try? Date.ISO8601FormatStyle().parse(String(s)) {
         return .date(date)
     } else {
         return nil

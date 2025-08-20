@@ -34,7 +34,7 @@ public struct Biscuit: Sendable, Hashable {
         rootKeyID: RootKeyID? = nil,
         algorithm: SigningAlgorithm = .ed25519,
         context: String? = nil,
-        @DatalogBlock using datalog: () throws -> DatalogBlock 
+        @DatalogBlock using datalog: () throws -> DatalogBlock
     ) throws {
         try self.init(
             authorityBlock: datalog(),
@@ -157,7 +157,7 @@ public struct Biscuit: Sendable, Hashable {
         try self.proof.isValidProof(for: lastBlock, interner: interner.blockTable(for: self.attenuations.count))
         self.interner = interner
     }
-    
+
     /// Deserializes a Biscuit from its base64url representation, assuming that a specific key
     /// was used as the root key for this Biscuit.
     /// - Parameters:
@@ -168,7 +168,7 @@ public struct Biscuit: Sendable, Hashable {
     public init<Key: PublicKey>(base64URLEncoded: String, rootKey: Key) throws {
         try self.init(base64URLEncoded: base64URLEncoded, getRootKey: { _ in rootKey })
     }
-    
+
     /// Deserializes a Biscuit from its base64url representation, using a RootKeyID in the Biscuit
     /// to determine which key should have been used to sign it.
     ///
@@ -180,14 +180,15 @@ public struct Biscuit: Sendable, Hashable {
     /// base64url or the underlying data is not in the proper format or signatures are not valid
     public init<Key: PublicKey>(base64URLEncoded: String, getRootKey: (RootKeyID?) -> Key?) throws {
         // Translate base64url into base64, ignoring padding, as defined in RFC4648.
-        let base64Encoded = base64URLEncoded
+        let base64Encoded =
+            base64URLEncoded
             .replacingOccurrences(of: "-", with: "+")
             .replacingOccurrences(of: "_", with: "/")
-        
+
         guard let data = Data(base64Encoded: base64Encoded) else {
             throw ValidationError.invalidBase64URLString
         }
-        
+
         try self.init(serializedData: data, getRootKey: getRootKey)
     }
 
@@ -321,14 +322,16 @@ public struct Biscuit: Sendable, Hashable {
         let nextKey = InternalPrivateKey(algorithm: algorithm)
         let lastSig = self.attenuations.last?.signature ?? self.authority.signature
         var attenuations = self.attenuations
-        try attenuations.append(Block(
-            datalog: attenuation,
-            nextKey: nextKey.publicKey,
-            lastKey: lastKey,
-            lastSig: lastSig,
-            externalSignature: nil,
-            interner: interner.primary
-        ))
+        try attenuations.append(
+            Block(
+                datalog: attenuation,
+                nextKey: nextKey.publicKey,
+                lastKey: lastKey,
+                lastSig: lastSig,
+                externalSignature: nil,
+                interner: interner.primary
+            )
+        )
         return Biscuit(self, attenuations, interner, .nextSecret(nextKey))
     }
 
@@ -364,14 +367,16 @@ public struct Biscuit: Sendable, Hashable {
             thirdPartyKey: thirdPartyKey,
             interner: blockInterner
         )
-        try attenuations.append(Block(
-            datalog: attenuation,
-            nextKey: nextKey.publicKey,
-            lastKey: lastKey,
-            lastSig: lastSig,
-            externalSignature: externalSignature,
-            interner: blockInterner
-        ))
+        try attenuations.append(
+            Block(
+                datalog: attenuation,
+                nextKey: nextKey.publicKey,
+                lastKey: lastKey,
+                lastSig: lastSig,
+                externalSignature: externalSignature,
+                interner: blockInterner
+            )
+        )
         var interner = self.interner
         interner.setBlockTable(blockInterner, for: attenuations.count)
         return Biscuit(self, attenuations, interner, .nextSecret(nextKey))
@@ -422,7 +427,7 @@ public struct Biscuit: Sendable, Hashable {
         using datalog: String,
         limitedBy: Authorizer.Limits = Authorizer.Limits.noLimits
     ) throws -> Authorization {
-        return try self.authorize(using: Authorizer(datalog, limitedBy: limitedBy))
+        try self.authorize(using: Authorizer(datalog, limitedBy: limitedBy))
     }
 
     /// Authorize this Biscuit
@@ -441,16 +446,17 @@ public struct Biscuit: Sendable, Hashable {
     /// - Returns: the data representation of this Biscuit
     /// - Throws: May throw an error if protobuf serialization fails
     public func serializedData() throws -> Data {
-        return try self.proto().serializedData()
+        try self.proto().serializedData()
     }
-    
+
     /// Serialize this Biscuit to its base64url encoded representation
     /// - Returns: the base64url encoded representation of this Biscuit
     /// - Throws: May thow an error if protobuf serialization fails
     public func base64URLEncoded() throws -> String {
         let base64Encoded = try self.proto().serializedData().base64EncodedString()
         // Translate base64 into base64url, ignoring padding, as defined in RFC4648.
-        return base64Encoded
+        return
+            base64Encoded
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "/", with: "_")
     }
@@ -543,6 +549,6 @@ public struct Biscuit: Sendable, Hashable {
         using datalog: String,
         limitedBy: Authorizer.Limits = Authorizer.Limits.noLimits
     ) throws -> Bool {
-        return try self.query(using: Check(datalog), limitedBy: limitedBy)
+        try self.query(using: Check(datalog), limitedBy: limitedBy)
     }
 }

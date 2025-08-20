@@ -22,8 +22,8 @@ public struct Policy: Sendable, Hashable, CustomStringConvertible {
 
         public var description: String {
             switch self.wrapped {
-                case .allow: "allow if"
-                case .deny: "deny if"
+            case .allow: "allow if"
+            case .deny: "deny if"
             }
         }
     }
@@ -70,7 +70,6 @@ public struct Policy: Sendable, Hashable, CustomStringConvertible {
         self.queries = [Biscuit.Query(predicates.predicates, predicates.expressions, trusting)]
     }
 
-
     init(_ rules: [Biscuit.Query], _ kind: Kind) {
         self.queries = rules
         self.kind = kind
@@ -80,6 +79,6 @@ public struct Policy: Sendable, Hashable, CustomStringConvertible {
     public static var alwaysAllow: Policy { Policy.allowIf { true } }
 
     public var description: String {
-        return "\(kind) \(queries.map { $0.description }.joined(separator: ", "))"
+        "\(kind) \(queries.map { $0.description }.joined(separator: ", "))"
     }
 }

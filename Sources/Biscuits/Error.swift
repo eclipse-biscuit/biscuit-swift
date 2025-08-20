@@ -18,7 +18,7 @@ extension Biscuit {
 
         public var description: String {
             switch self.code {
-                case .cannotAttenuateSealedToken: "cannot attenuate a sealed token"
+            case .cannotAttenuateSealedToken: "cannot attenuate a sealed token"
             }
         }
     }
@@ -35,24 +35,24 @@ extension Biscuit {
         /// Whether or not this failed because there was no successful allow policy
         public var noSuccessfulPolicy: Bool {
             switch self.wrapped {
-                case .noSuccess: true
-                default: false
+            case .noSuccess: true
+            default: false
             }
         }
 
         /// If this failed because of a failed check, the check which failed
         public var failedCheck: Check? {
             switch self.wrapped {
-                case .check(let check): check
-                default: nil
+            case .check(let check): check
+            default: nil
             }
         }
 
         /// If this failed because of a deny policy, the policy which caused the failure
         public var failedPolicy: Policy? {
             switch self.wrapped {
-                case .deny(let deny): deny
-                default: nil
+            case .deny(let deny): deny
+            default: nil
             }
         }
 
@@ -115,21 +115,21 @@ extension Biscuit {
 
         public var description: String {
             switch self.code {
-                case .authorizerWithoutPolicy: "authorizer contains no allow or deny policy"
-                case .integerOverflow: "integer overflow in authorization"
-                case .invalidExpression: "expression was invalid"
-                case .invalidBinaryOp: "binary operation was invalid"
-                case .invalidUnaryOp: "unary operation was invalid"
-                case .nonBooleanExpression: "expression did not evaluate to a boolean expression"
-                case .unknownVariable: "variable is unknown"
-                case .unknownSymbol: "symbol is unknown"
-                case .unknownForeignFunction(let name): "foreign function `\(name)` is unknown"
-                case .wrongArity: "closure takes incorrect number of arguments"
-                case .typeError: "invalid type"
-                case .variableShadowing: "closure parameter shadows another variable"
-                case .closureEvaluatedToClosure: "closure evaluated to closure"
-                case .tooManyFacts: "evaluating biscuit produced too many facts"
-                case .tooManyIterations: "evaluating biscuit required too many iterations"
+            case .authorizerWithoutPolicy: "authorizer contains no allow or deny policy"
+            case .integerOverflow: "integer overflow in authorization"
+            case .invalidExpression: "expression was invalid"
+            case .invalidBinaryOp: "binary operation was invalid"
+            case .invalidUnaryOp: "unary operation was invalid"
+            case .nonBooleanExpression: "expression did not evaluate to a boolean expression"
+            case .unknownVariable: "variable is unknown"
+            case .unknownSymbol: "symbol is unknown"
+            case .unknownForeignFunction(let name): "foreign function `\(name)` is unknown"
+            case .wrongArity: "closure takes incorrect number of arguments"
+            case .typeError: "invalid type"
+            case .variableShadowing: "closure parameter shadows another variable"
+            case .closureEvaluatedToClosure: "closure evaluated to closure"
+            case .tooManyFacts: "evaluating biscuit produced too many facts"
+            case .tooManyIterations: "evaluating biscuit required too many iterations"
             }
         }
     }
@@ -208,27 +208,27 @@ extension Biscuit {
 
         public var description: String {
             switch self.code {
-                case .errorInLexing: "lexing error occurred while parsing Datalog"
-                case .missingSemicolon: "missing semicolon in Datalog"
-                case .missingLeftParen: "missing left parenthesis in Datalog"
-                case .missingRightParen: "missing right parenthesis in Datalog"
-                case .unknownBlockElement(let token): "unknown block element: \(token)"
-                case .unknownCheck(let token): "unknown check kind: \(token)"
-                case .unknownMethod(let token): "unknown method: \(token)"
-                case .unknownPolicy(let token): "unknown policy kind: \(token)"
-                case .unknownPredicate(let token): "unknown predicate: \(token)"
-                case .unknownRuleElement(let token): "unknown rule element: \(token)"
-                case .unknownScope(let token): "unknown trusting scope: \(token)"
-                case .unknownTerm(let token): "unknown term: \(token)"
-                case .unexpectedEndOfCode: "unexpected end of Datalog code"
-                case .variableInFact: "fact contained a variable"
-                case .variableInHeadAlone: "variable only present in head of a rule"
-                case .chainedComparisonsWithoutParens: "chaining comparisons in Datalog requires parentheses"
-                case .invalidMapKey(let v): "invalid map key type: \(v.type)"
-                case .mapMissingValue: "map is missing value"
-                case .setInSet: "set contains a set"
-                case .duplicateMapKey: "map contains duplicate key"
-                case .invalidHexData: "invalid hexadecimal string"
+            case .errorInLexing: "lexing error occurred while parsing Datalog"
+            case .missingSemicolon: "missing semicolon in Datalog"
+            case .missingLeftParen: "missing left parenthesis in Datalog"
+            case .missingRightParen: "missing right parenthesis in Datalog"
+            case .unknownBlockElement(let token): "unknown block element: \(token)"
+            case .unknownCheck(let token): "unknown check kind: \(token)"
+            case .unknownMethod(let token): "unknown method: \(token)"
+            case .unknownPolicy(let token): "unknown policy kind: \(token)"
+            case .unknownPredicate(let token): "unknown predicate: \(token)"
+            case .unknownRuleElement(let token): "unknown rule element: \(token)"
+            case .unknownScope(let token): "unknown trusting scope: \(token)"
+            case .unknownTerm(let token): "unknown term: \(token)"
+            case .unexpectedEndOfCode: "unexpected end of Datalog code"
+            case .variableInFact: "fact contained a variable"
+            case .variableInHeadAlone: "variable only present in head of a rule"
+            case .chainedComparisonsWithoutParens: "chaining comparisons in Datalog requires parentheses"
+            case .invalidMapKey(let v): "invalid map key type: \(v.type)"
+            case .mapMissingValue: "map is missing value"
+            case .setInSet: "set contains a set"
+            case .duplicateMapKey: "map contains duplicate key"
+            case .invalidHexData: "invalid hexadecimal string"
             }
         }
     }
@@ -316,40 +316,40 @@ extension Biscuit {
 
         public var description: String {
             switch self.code {
-                case .invalidProof: "Biscuit proof is invalid"
-                case .invalidSignature: "Biscuit contains invalid signature"
-                case .invalidExternalSignature: "Biscuit contains invalid third party signature"
-                case .invalidSealingSignature: "Biscuit is sealed with invalid signature"
-                case .invalidQueryHead: "Checks must have query as their head"
-                case .invalidVersion: "Biscuit version is invalid"
-                case .unknownRootKey: "Biscuit signed with unknown root key"
-                case .unknownPublicKey: "Biscuit contains unknown public key"
-                case .unknownSymbol: "Biscuit contains unknown symbol"
-                case .missingAuthority: "Biscuit is missing an authority block"
-                case .missingBlockData: " Biscuit block is missing Datalog contents"
-                case .missingExternalSignature: "Biscuit ThirdPartyBlockContents is missing third party signature"
-                case .missingFFI: "Biscuit is expression missing FFI name"
-                case .missingPayload: "Biscuit ThirdPartyBlockContents is missing payload"
-                case .missingPreviousSignature: "Biscuit ThirdPartyBlockRequest is missing previous signature"
-                case .missingProof: "Biscuit is missing proof"
-                case .missingPublicKey: "Biscuit block is missing a public key"
-                case .missingSignature: "Biscuit block is missing a signature"
-                case .duplicatePublicKey: "Biscuit block duplicates public key"
-                case .duplicateSymbol: "Biscuit block duplicates symbol"
-                case .missingOp: "Biscuit expression missing operation"
-                case .missingPredicate: "Biscuit predicate missing name"
-                case .missingRuleHead: "Biscuit rule missing head"
-                case .missingScope: "Biscuit statement scope is missing"
-                case .missingTerm: "Biscuit term is missing"
-                case .missingVersion: "Biscuit is missing version"
-                case .unboundVariableInHead: "Variable only present in head of a rule"
-                case .thirdPartySignedAuthority: "Authority block has third party signature"
-                case .deprecatedThirdPartySignature: "Deprecated form of third party signature"
-                case .variableInFact: "Fact contained a free variable"
-                case .setInSet: "Set contains a set"
-                case .duplicateMapKey: "Map contains duplicate keys"
-                case .invalidHexData: "Invalid character in hexadecimal string"
-                case .invalidBase64URLString: "Invalid Base64URL encoded string"
+            case .invalidProof: "Biscuit proof is invalid"
+            case .invalidSignature: "Biscuit contains invalid signature"
+            case .invalidExternalSignature: "Biscuit contains invalid third party signature"
+            case .invalidSealingSignature: "Biscuit is sealed with invalid signature"
+            case .invalidQueryHead: "Checks must have query as their head"
+            case .invalidVersion: "Biscuit version is invalid"
+            case .unknownRootKey: "Biscuit signed with unknown root key"
+            case .unknownPublicKey: "Biscuit contains unknown public key"
+            case .unknownSymbol: "Biscuit contains unknown symbol"
+            case .missingAuthority: "Biscuit is missing an authority block"
+            case .missingBlockData: " Biscuit block is missing Datalog contents"
+            case .missingExternalSignature: "Biscuit ThirdPartyBlockContents is missing third party signature"
+            case .missingFFI: "Biscuit is expression missing FFI name"
+            case .missingPayload: "Biscuit ThirdPartyBlockContents is missing payload"
+            case .missingPreviousSignature: "Biscuit ThirdPartyBlockRequest is missing previous signature"
+            case .missingProof: "Biscuit is missing proof"
+            case .missingPublicKey: "Biscuit block is missing a public key"
+            case .missingSignature: "Biscuit block is missing a signature"
+            case .duplicatePublicKey: "Biscuit block duplicates public key"
+            case .duplicateSymbol: "Biscuit block duplicates symbol"
+            case .missingOp: "Biscuit expression missing operation"
+            case .missingPredicate: "Biscuit predicate missing name"
+            case .missingRuleHead: "Biscuit rule missing head"
+            case .missingScope: "Biscuit statement scope is missing"
+            case .missingTerm: "Biscuit term is missing"
+            case .missingVersion: "Biscuit is missing version"
+            case .unboundVariableInHead: "Variable only present in head of a rule"
+            case .thirdPartySignedAuthority: "Authority block has third party signature"
+            case .deprecatedThirdPartySignature: "Deprecated form of third party signature"
+            case .variableInFact: "Fact contained a free variable"
+            case .setInSet: "Set contains a set"
+            case .duplicateMapKey: "Map contains duplicate keys"
+            case .invalidHexData: "Invalid character in hexadecimal string"
+            case .invalidBase64URLString: "Invalid Base64URL encoded string"
             }
         }
     }

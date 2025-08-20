@@ -19,7 +19,7 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
     ///   - head: the fact that will be implied by this rule
     ///   - trusting: any scopes that will trusted for this rule
     ///   - predicates: the predicates of this rule
-    /// - Throws: Throws a `ValidationError` if the head contains a variable which is not used in
+    /// - Throws: Throws a `ValidationError` if the head contains a variable which is not bound in
     ///   the predicates of the body
     public init<each T: TrustedScopeConvertible>(
         head: Predicate,
@@ -49,7 +49,7 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
         self = parser.rules[0]
     }
 
-    init(proto: Biscuit_Format_Schema_RuleV2, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Rule, interner: BlockInternmentTable) throws {
         guard proto.hasHead else {
             throw Biscuit.ValidationError.missingRuleHead
         }
@@ -57,7 +57,7 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
         self.bodyPredicates = try proto.body.map { try Predicate(proto: $0, interner: interner) }
         self.expressions = try proto.expressions.map { try Expression(proto: $0, interner: interner) }
         self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner) }
-        if !self.head.terms.allSatisfy({term in
+        if !self.head.terms.allSatisfy({ term in
             term.isConcrete || self.bodyPredicates.contains(where: { $0.terms.contains(term) })
         }) {
             throw Biscuit.ValidationError.unboundVariableInHead
@@ -65,7 +65,7 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
     }
 
     init(_ head: Predicate, _ body: [Predicate], _ expressions: [Expression], _ trusted: [TrustedScope]) {
-        self.head = head 
+        self.head = head
         self.bodyPredicates = body
         self.expressions = expressions
         self.trusted = trusted
@@ -88,8 +88,8 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
         }
     }
 
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_RuleV2 {
-        var proto = Biscuit_Format_Schema_RuleV2()
+    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Rule {
+        var proto = Biscuit_Format_Schema_Rule()
         proto.head = self.head.proto(interner)
         proto.body = self.bodyPredicates.map { $0.proto(interner) }
         proto.expressions = self.expressions.map { $0.proto(interner) }

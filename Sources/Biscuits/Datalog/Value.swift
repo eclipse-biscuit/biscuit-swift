@@ -9,7 +9,9 @@ import Foundation
 #endif
 
 /// A Datalog literal value; a `Term` which is not a variable
-public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, Sendable, Hashable, CustomStringConvertible {
+public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, Sendable, Hashable,
+    CustomStringConvertible
+{
     enum Wrapped: Hashable {
         case integer(Int64)
         case string(String)
@@ -80,13 +82,19 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     /// - Returns: a value which is a set
     /// - Throws: Throws a `DatalogError` if one of the values is a set
     public static func set<V: ValueConvertible>(from set: Set<V>) throws -> Value {
-        return try Value(.set(Set<Value>(set.map {
-            let elem = $0.value
-            if case .set = elem.wrapped {
-                throw Biscuit.DatalogError.setInSet
-            }
-            return elem
-        })))
+        try Value(
+            .set(
+                Set<Value>(
+                    set.map {
+                        let elem = $0.value
+                        if case .set = elem.wrapped {
+                            throw Biscuit.DatalogError.setInSet
+                        }
+                        return elem
+                    }
+                )
+            )
+        )
     }
 
     /// Construct a set value from variadic value arguments
@@ -111,7 +119,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     /// - Parameter from: an array of values
     /// - Returns: a value which is an array
     public static func array<V: ValueConvertible>(from array: [V]) -> Value {
-        return Value(.array(array.map { $0.value }))
+        Value(.array(array.map { $0.value }))
     }
 
     /// Construct an array value from variadic value arguments
@@ -128,19 +136,28 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     /// - Returns: a value which is a map
     /// - Throws: Throws a `DatalogError` if multiple different values are assigned to the same mapkey
     public static func map<K: MapKeyConvertible, V: ValueConvertible>(from map: [K: V]) throws -> Value {
-        return try Value(.map(Dictionary(map.map {
-            ($0.mapKey, $1.value)
-        }, uniquingKeysWith: { v1, v2 in 
-            guard v1 == v2 else { throw  Biscuit.DatalogError.duplicateMapKey }
-            return v1
-        })))
+        try Value(
+            .map(
+                Dictionary(
+                    map.map {
+                        ($0.mapKey, $1.value)
+                    },
+                    uniquingKeysWith: { v1, v2 in
+                        guard v1 == v2 else { throw Biscuit.DatalogError.duplicateMapKey }
+                        return v1
+                    }
+                )
+            )
+        )
     }
 
     /// Construct a map value from variadic key and value arguments
     /// - Parameter pair: a tuple of a map key and a value that will be in the map
     /// - Returns: a value which is a map
     /// - Throws: Throws a `DatalogError` if multiple different values are assigned to the same mapkey
-    public static func map<each K: MapKeyConvertible, each V: ValueConvertible>(_ pair: repeat (each K, each V)) throws -> Value {
+    public static func map<each K: MapKeyConvertible, each V: ValueConvertible>(
+        _ pair: repeat (each K, each V)
+    ) throws -> Value {
         func tryInsert(_ values: inout [MapKey: Value], _ key: MapKey, _ value: Value) throws {
             if let existingValue = values[key] {
                 if existingValue != value {
@@ -163,72 +180,83 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
         self.wrapped = wrapped
     }
 
-    init(proto: Biscuit_Format_Schema_TermV2, interner: BlockInternmentTable) throws {
-        self.wrapped = switch proto.content {
+    init(proto: Biscuit_Format_Schema_Term, interner: BlockInternmentTable) throws {
+        self.wrapped =
+            switch proto.content {
             case .integer(let i): .integer(i)
             case .string(let s): try .string(interner.lookupSymbol(Int(s)))
             case .date(let d): .date(Date(timeIntervalSince1970: TimeInterval(d)))
             case .bytes(let b): .bytes(b)
             case .bool(let b): .bool(b)
-            case .set(let terms): try .set(Set(terms.set.map {
-                let value = try Value(proto: $0, interner: interner)
-                if case .set = value.wrapped {
-                    throw Biscuit.ValidationError.setInSet
-                }
-                return value
-            }))
+            case .set(let terms):
+                try .set(
+                    Set(
+                        terms.set.map {
+                            let value = try Value(proto: $0, interner: interner)
+                            if case .set = value.wrapped {
+                                throw Biscuit.ValidationError.setInSet
+                            }
+                            return value
+                        }
+                    )
+                )
             case .array(let terms): try .array(terms.array.map { try Value(proto: $0, interner: interner) })
             case .map(let terms):
-                try .map(Dictionary(terms.entries.map {
-                    let key = try MapKey(proto: $0.key, interner: interner)
-                    let val = try Value(proto: $0.value, interner: interner)
-                    return (key, val)
-                }, uniquingKeysWith: { v1, v2 in 
-                    guard v1 == v2 else { throw  Biscuit.ValidationError.duplicateMapKey }
-                    return v1
-                }))
+                try .map(
+                    Dictionary(
+                        terms.entries.map {
+                            let key = try MapKey(proto: $0.key, interner: interner)
+                            let val = try Value(proto: $0.value, interner: interner)
+                            return (key, val)
+                        },
+                        uniquingKeysWith: { v1, v2 in
+                            guard v1 == v2 else { throw Biscuit.ValidationError.duplicateMapKey }
+                            return v1
+                        }
+                    )
+                )
             case .null: .null
             case .variable: throw Biscuit.ValidationError.variableInFact
             case .none: throw Biscuit.ValidationError.missingTerm
-        }
+            }
     }
 
     // Intentionally not public and Value does not conform to Comparable
     static func < (lhs: Value, rhs: Value) -> Bool {
         switch (lhs.wrapped, rhs.wrapped) {
-            case (.integer(let l), .integer(let r)): return l < r
-            case (.string(let l), .string(let r)): return l < r
-            case (.date(let l), .date(let r)): return l < r
-            case (.bytes(let l), .bytes(let r)):
-                guard l.count <= r.count else { return false }
-                return zip(l, r).allSatisfy { $0 < $1 }
-            case (.bool(let l), .bool(let r)): return !l && r
-            case (.set(let l), .set(let r)):
-                guard l.count <= r.count else { return false }
-                return zip(l.sorted(by: <), r.sorted(by: <)).allSatisfy { $0 < $1 }
-            case (.null, .null): return false
-            case (.array(let l), .array(let r)):
-                guard l.count <= r.count else { return false }
-                return zip(l, r).allSatisfy { $0 < $1 }
-            case (.map(let l), .map(let r)):
-                guard l.count <= r.count else { return false }
-                return zip(l.sorted(by: { $0.0 < $1.0 }), r.sorted(by: { $0.0 < $1.0 })).allSatisfy { $0.1 < $1.1 }
-            case (.integer, _): return true
-            case (_, .integer): return false
-            case (.string, _): return true
-            case (_, .string): return false
-            case (.date, _): return true
-            case (_, .date): return false
-            case (.bytes, _): return true
-            case (_, .bytes): return false
-            case (.bool, _): return true
-            case (_, .bool): return false
-            case (.set, _): return true
-            case (_, .set): return false
-            case (.null, _): return true
-            case (_, .null): return false
-            case (.array, _): return true
-            case (_, .array): return false
+        case (.integer(let l), .integer(let r)): return l < r
+        case (.string(let l), .string(let r)): return l < r
+        case (.date(let l), .date(let r)): return l < r
+        case (.bytes(let l), .bytes(let r)):
+            guard l.count <= r.count else { return false }
+            return zip(l, r).allSatisfy { $0 < $1 }
+        case (.bool(let l), .bool(let r)): return !l && r
+        case (.set(let l), .set(let r)):
+            guard l.count <= r.count else { return false }
+            return zip(l.sorted(by: <), r.sorted(by: <)).allSatisfy { $0 < $1 }
+        case (.null, .null): return false
+        case (.array(let l), .array(let r)):
+            guard l.count <= r.count else { return false }
+            return zip(l, r).allSatisfy { $0 < $1 }
+        case (.map(let l), .map(let r)):
+            guard l.count <= r.count else { return false }
+            return zip(l.sorted(by: { $0.0 < $1.0 }), r.sorted(by: { $0.0 < $1.0 })).allSatisfy { $0.1 < $1.1 }
+        case (.integer, _): return true
+        case (_, .integer): return false
+        case (.string, _): return true
+        case (_, .string): return false
+        case (.date, _): return true
+        case (_, .date): return false
+        case (.bytes, _): return true
+        case (_, .bytes): return false
+        case (.bool, _): return true
+        case (_, .bool): return false
+        case (.set, _): return true
+        case (_, .set): return false
+        case (.null, _): return true
+        case (_, .null): return false
+        case (.array, _): return true
+        case (_, .array): return false
         }
     }
 
@@ -306,7 +334,6 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     public func strictOr<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {
         self.expression.strictOr(rhs)
     }
-
 
     /// An add expression
     public func add<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {
@@ -393,51 +420,50 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
         self.expression.tryOr(rhs)
     }
 
-
     func intern(_ interner: inout BlockInternmentTable, _ locals: inout [String]) {
         switch self.wrapped {
-            case .string(let string):
-                interner.intern(string, &locals)
-            case .set(let set):
-                for term in set.sorted(by: <) {
-                    term.intern(&interner, &locals)
-                }
-            case .array(let array):
-                for term in array {
-                    term.intern(&interner, &locals)
-                }
-            case .map(let map):
-                for (key, val) in map.sorted(by: { $0.0 < $1.0 }) {
-                    key.intern(&interner, &locals)
-                    val.intern(&interner, &locals)
-                }
-            default: return
+        case .string(let string):
+            interner.intern(string, &locals)
+        case .set(let set):
+            for term in set.sorted(by: <) {
+                term.intern(&interner, &locals)
+            }
+        case .array(let array):
+            for term in array {
+                term.intern(&interner, &locals)
+            }
+        case .map(let map):
+            for (key, val) in map.sorted(by: { $0.0 < $1.0 }) {
+                key.intern(&interner, &locals)
+                val.intern(&interner, &locals)
+            }
+        default: return
         }
     }
 
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_TermV2 {
-        var proto = Biscuit_Format_Schema_TermV2()
+    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Term {
+        var proto = Biscuit_Format_Schema_Term()
         switch self.wrapped {
-            case .integer(let i): proto.integer = Int64(i)
-            case .string(let s): proto.string = UInt64(interner.symbolIndex(for: s))
-            case .date(let d): proto.date = UInt64(d.timeIntervalSince1970)
-            case .bytes(let b): proto.bytes = b
-            case .bool(let b): proto.bool = b
-            case .set(let terms):
-                proto.set = Biscuit_Format_Schema_TermSet()
-                proto.set.set = terms.map { $0.proto(interner) }.sorted(by: <)
-            case .array(let terms):
-                proto.array = Biscuit_Format_Schema_Array()
-                proto.array.array = terms.map { $0.proto(interner) }
-            case .map(let terms):
-                proto.map = Biscuit_Format_Schema_Map()
-                proto.map.entries = terms.map {
-                    var entry = Biscuit_Format_Schema_MapEntry()
-                    entry.key = $0.proto(interner)
-                    entry.value = $1.proto(interner)
-                    return entry
-                }.sorted(by: <)
-            case .null: proto.null = Biscuit_Format_Schema_Empty()
+        case .integer(let i): proto.integer = Int64(i)
+        case .string(let s): proto.string = UInt64(interner.symbolIndex(for: s))
+        case .date(let d): proto.date = UInt64(d.timeIntervalSince1970)
+        case .bytes(let b): proto.bytes = b
+        case .bool(let b): proto.bool = b
+        case .set(let terms):
+            proto.set = Biscuit_Format_Schema_TermSet()
+            proto.set.set = terms.map { $0.proto(interner) }.sorted(by: <)
+        case .array(let terms):
+            proto.array = Biscuit_Format_Schema_Array()
+            proto.array.array = terms.map { $0.proto(interner) }
+        case .map(let terms):
+            proto.map = Biscuit_Format_Schema_Map()
+            proto.map.entries = terms.map {
+                var entry = Biscuit_Format_Schema_MapEntry()
+                entry.key = $0.proto(interner)
+                entry.value = $1.proto(interner)
+                return entry
+            }.sorted(by: <)
+        case .null: proto.null = Biscuit_Format_Schema_Empty()
         }
         return proto
     }
@@ -446,79 +472,79 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
 
     public var description: String {
         switch self.wrapped {
-            case .integer(let int): "\(int)"
-            case .string(let string): "\"\(string)\""
-            case .date(let date): "\(date)"
-            case .bytes(let bytes): "hex:\(bytes.map { String(format: "%02hhx", $0) }.joined())"
-            case .bool(let bool): "\(bool)"
-            case .set(let set): "{\(set.sorted(by: <).map { "\($0)" }.joined(separator: ", "))}"
-            case .array(let array): "[\(array.map { "\($0)" }.joined(separator: ", "))]"
-            case .map(let dict): "{\(dict.sorted(by: { $0.0 < $1.0 }).map { "\($0): \($1)" }.joined(separator: ", "))}"
-            case .null: "null"
+        case .integer(let int): "\(int)"
+        case .string(let string): "\"\(string)\""
+        case .date(let date): "\(date)"
+        case .bytes(let bytes): "hex:\(bytes.map { String(format: "%02hhx", $0) }.joined())"
+        case .bool(let bool): "\(bool)"
+        case .set(let set): set.isEmpty ? "{,}" : "{\(set.sorted(by: <).map { "\($0)" }.joined(separator: ", "))}"
+        case .array(let array): "[\(array.map { "\($0)" }.joined(separator: ", "))]"
+        case .map(let dict): "{\(dict.sorted(by: { $0.0 < $1.0 }).map { "\($0): \($1)" }.joined(separator: ", "))}"
+        case .null: "null"
         }
     }
 
     var type: String {
         switch self.wrapped {
-            case .integer: "integer"
-            case .string: "string"
-            case .bytes: "bytes"
-            case .bool: "bool"
-            case .date: "date"
-            case .array: "array"
-            case .map: "map"
-            case .null: "null"
-            case .set: "set"
+        case .integer: "integer"
+        case .string: "string"
+        case .bytes: "bytes"
+        case .bool: "bool"
+        case .date: "date"
+        case .array: "array"
+        case .map: "map"
+        case .null: "null"
+        case .set: "set"
         }
     }
 
     func opNegate() throws -> Value {
         switch self.wrapped {
-            case .bool(let x): return Value(!x)
-            default: throw Biscuit.EvaluationError.typeError
+        case .bool(let x): return Value(!x)
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opLength() throws -> Value {
         switch self.wrapped {
-            case .string(let x): return x.utf8.count.value
-            case .bytes(let x): return x.count.value
-            case .set(let x): return x.count.value
-            case .array(let x): return x.count.value
-            case .map(let x): return x.count.value
-            default: throw Biscuit.EvaluationError.typeError
+        case .string(let x): return x.utf8.count.value
+        case .bytes(let x): return x.count.value
+        case .set(let x): return x.count.value
+        case .array(let x): return x.count.value
+        case .map(let x): return x.count.value
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opLt(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.integer(let x), .integer(let y)): Value(x < y)
-            case (.date(let x), .date(let y)): Value(x < y)
-            default: throw Biscuit.EvaluationError.typeError
+        case (.integer(let x), .integer(let y)): Value(x < y)
+        case (.date(let x), .date(let y)): Value(x < y)
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opGt(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.integer(let x), .integer(let y)): Value(x > y)
-            case (.date(let x), .date(let y)): Value(x > y)
-            default: throw Biscuit.EvaluationError.typeError
+        case (.integer(let x), .integer(let y)): Value(x > y)
+        case (.date(let x), .date(let y)): Value(x > y)
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opLtEq(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.integer(let x), .integer(let y)): Value(x <= y)
-            case (.date(let x), .date(let y)): Value(x <= y)
-            default: throw Biscuit.EvaluationError.typeError
+        case (.integer(let x), .integer(let y)): Value(x <= y)
+        case (.date(let x), .date(let y)): Value(x <= y)
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opGtEq(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.integer(let x), .integer(let y)): Value(x >= y)
-            case (.date(let x), .date(let y)): Value(x >= y)
-            default: throw Biscuit.EvaluationError.typeError
+        case (.integer(let x), .integer(let y)): Value(x >= y)
+        case (.date(let x), .date(let y)): Value(x >= y)
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
@@ -538,42 +564,43 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
 
     func opContains(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.string(let x), .string(let y)): Value(x.contains(y))
-            case (.set(let x), .set(let y)): Value(x.isSuperset(of: y))
-            case (.set(let x), _): Value(x.contains(rhs))
-            case (.array(let x), _): Value(x.contains(rhs))
-            case (.map(let x), .integer(let y)): Value(x.keys.contains(MapKey(.integer(y))))
-            case (.map(let x), .string(let y)): Value(x.keys.contains(MapKey(y)))
-            default: throw Biscuit.EvaluationError.typeError
+        case (.string(let x), .string(let y)): Value(x.contains(y))
+        case (.set(let x), .set(let y)): Value(x.isSuperset(of: y))
+        case (.set(let x), _): Value(x.contains(rhs))
+        case (.array(let x), _): Value(x.contains(rhs))
+        case (.map(let x), .integer(let y)): Value(x.keys.contains(MapKey(.integer(y))))
+        case (.map(let x), .string(let y)): Value(x.keys.contains(MapKey(y)))
+        case (.map, _): Value(false)
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opStartsWith(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.array(let x), .array(let y)): Value(x.starts(with: y))
-            case (.string(let x), .string(let y)): Value(x.hasPrefix(y))
-            default: throw Biscuit.EvaluationError.typeError
+        case (.array(let x), .array(let y)): Value(x.starts(with: y))
+        case (.string(let x), .string(let y)): Value(x.hasPrefix(y))
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opEndsWith(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.array(let x), .array(let y)): Value(x.reversed().starts(with: y.reversed()))
-            case (.string(let x), .string(let y)): Value(x.hasSuffix(y))
-            default: throw Biscuit.EvaluationError.typeError
+        case (.array(let x), .array(let y)): Value(x.reversed().starts(with: y.reversed()))
+        case (.string(let x), .string(let y)): Value(x.hasSuffix(y))
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opAdd(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.string(let x), .string(let y)): return Value(x + y)
-            case (.integer(let x), .integer(let y)):
-                let (res, overflow) = x.addingReportingOverflow(y)
-                if overflow {
-                    throw Biscuit.EvaluationError.integerOverflow
-                }
-                return Value(.integer(res))
-            default: throw Biscuit.EvaluationError.typeError
+        case (.string(let x), .string(let y)): return Value(x + y)
+        case (.integer(let x), .integer(let y)):
+            let (res, overflow) = x.addingReportingOverflow(y)
+            if overflow {
+                throw Biscuit.EvaluationError.integerOverflow
+            }
+            return Value(.integer(res))
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
@@ -612,22 +639,22 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
 
     func opBitwiseAnd(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.integer(let x), .integer(let y)): Value(.integer(x & y))
-            default: throw Biscuit.EvaluationError.typeError
+        case (.integer(let x), .integer(let y)): Value(.integer(x & y))
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opBitwiseOr(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.integer(let x), .integer(let y)): Value(.integer(x | y))
-            default: throw Biscuit.EvaluationError.typeError
+        case (.integer(let x), .integer(let y)): Value(.integer(x | y))
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opBitwiseXor(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.integer(let x), .integer(let y)): Value(.integer(x ^ y))
-            default: throw Biscuit.EvaluationError.typeError
+        case (.integer(let x), .integer(let y)): Value(.integer(x ^ y))
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
@@ -647,38 +674,38 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
 
     func opRegex(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.string(let x), .string(let y)): return try Value(x.contains(Regex(y)))
-            default: throw Biscuit.EvaluationError.typeError
+        case (.string(let x), .string(let y)): return try Value(x.contains(Regex(y)))
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opGet(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
-            case (.array(let array), .integer(let i)):
-                return array.count > i ? array[Int(i)] : Value.null
-            case (.map(let map), .integer(let x)):
-                return map[MapKey(.integer(x))] ?? Value.null
-            case (.map(let map), .string(let x)):
-                return map[MapKey(x)] ?? Value.null
-            default: throw Biscuit.EvaluationError.typeError
+        case (.array(let array), .integer(let i)):
+            return array.count > i ? array[Int(i)] : Value.null
+        case (.map(let map), .integer(let x)):
+            return map[MapKey(.integer(x))] ?? Value.null
+        case (.map(let map), .string(let x)):
+            return map[MapKey(x)] ?? Value.null
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opAny(_ f: Closure, _ vars: [String: Value]) throws -> Value {
         switch self.wrapped {
-            case .set(let x): return try x.contains() { try f.evaluate($0, vars) == true.value }.value
-            case .array(let x): return try x.contains() { try f.evaluate($0, vars) == true.value }.value
-            case .map(let x): return try x.contains() { try f.evaluate(Value.array($0, $1), vars) == true.value }.value
-            default: throw Biscuit.EvaluationError.typeError
+        case .set(let x): return try x.contains { try f.evaluate($0, vars) == true.value }.value
+        case .array(let x): return try x.contains { try f.evaluate($0, vars) == true.value }.value
+        case .map(let x): return try x.contains { try f.evaluate(Value.array($0, $1), vars) == true.value }.value
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
     func opAll(_ f: Closure, _ vars: [String: Value]) throws -> Value {
         switch self.wrapped {
-            case .set(let x): return try x.allSatisfy() { try f.evaluate($0, vars) == true.value }.value
-            case .array(let x): return try x.allSatisfy() { try f.evaluate($0, vars) == true.value }.value
-            case .map(let x): return try x.allSatisfy() { try f.evaluate(Value.array($0, $1), vars) == true.value }.value
-            default: throw Biscuit.EvaluationError.typeError
+        case .set(let x): return try x.allSatisfy { try f.evaluate($0, vars) == true.value }.value
+        case .array(let x): return try x.allSatisfy { try f.evaluate($0, vars) == true.value }.value
+        case .map(let x): return try x.allSatisfy { try f.evaluate(Value.array($0, $1), vars) == true.value }.value
+        default: throw Biscuit.EvaluationError.typeError
         }
     }
 
@@ -721,47 +748,47 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     }
 }
 
-extension Biscuit_Format_Schema_TermV2: Comparable {
-    static func < (lhs: Biscuit_Format_Schema_TermV2, rhs: Biscuit_Format_Schema_TermV2) -> Bool {
+extension Biscuit_Format_Schema_Term: Comparable {
+    static func < (lhs: Biscuit_Format_Schema_Term, rhs: Biscuit_Format_Schema_Term) -> Bool {
         switch (lhs.content, rhs.content) {
-            case (.variable(let l), .variable(let r)): return l < r
-            case (.integer(let l), .integer(let r)): return l < r
-            case (.string(let l), .string(let r)): return l < r
-            case (.date(let l), .date(let r)): return l < r
-            case (.bytes(let l), .bytes(let r)):
-                guard l.count <= r.count else { return false }
-                return zip(l, r).allSatisfy { $0 < $1 }
-            case (.bool(let l), .bool(let r)): return !l && r
-            case (.set(let l), .set(let r)):
-                guard l.set.count <= r.set.count else { return false }
-                return zip(l.set.sorted(), r.set.sorted()).allSatisfy { $0 < $1 }
-            case (.null, .null): return false
-            case (.array(let l), .array(let r)):
-                guard l.array.count <= r.array.count else { return false }
-                return zip(l.array, r.array).allSatisfy { $0 < $1 }
-            case (.map(let l), .map(let r)):
-                guard l.entries.count <= r.entries.count else { return false }
-                return zip(l.entries.sorted(), r.entries.sorted()).allSatisfy { $0 < $1 }
-            case (.none, _): return true
-            case (_, .none): return false
-            case (.variable, _): return true
-            case (_, .variable): return false
-            case (.integer, _): return true
-            case (_, .integer): return false
-            case (.string, _): return true
-            case (_, .string): return false
-            case (.date, _): return true
-            case (_, .date): return false
-            case (.bytes, _): return true
-            case (_, .bytes): return false
-            case (.bool, _): return true
-            case (_, .bool): return false
-            case (.set, _): return true
-            case (_, .set): return false
-            case (.null, _): return true
-            case (_, .null): return false
-            case (.array, _): return true
-            case (_, .array): return false
+        case (.variable(let l), .variable(let r)): return l < r
+        case (.integer(let l), .integer(let r)): return l < r
+        case (.string(let l), .string(let r)): return l < r
+        case (.date(let l), .date(let r)): return l < r
+        case (.bytes(let l), .bytes(let r)):
+            guard l.count <= r.count else { return false }
+            return zip(l, r).allSatisfy { $0 < $1 }
+        case (.bool(let l), .bool(let r)): return !l && r
+        case (.set(let l), .set(let r)):
+            guard l.set.count <= r.set.count else { return false }
+            return zip(l.set.sorted(), r.set.sorted()).allSatisfy { $0 < $1 }
+        case (.null, .null): return false
+        case (.array(let l), .array(let r)):
+            guard l.array.count <= r.array.count else { return false }
+            return zip(l.array, r.array).allSatisfy { $0 < $1 }
+        case (.map(let l), .map(let r)):
+            guard l.entries.count <= r.entries.count else { return false }
+            return zip(l.entries.sorted(), r.entries.sorted()).allSatisfy { $0 < $1 }
+        case (.none, _): return true
+        case (_, .none): return false
+        case (.variable, _): return true
+        case (_, .variable): return false
+        case (.integer, _): return true
+        case (_, .integer): return false
+        case (.string, _): return true
+        case (_, .string): return false
+        case (.date, _): return true
+        case (_, .date): return false
+        case (.bytes, _): return true
+        case (_, .bytes): return false
+        case (.bool, _): return true
+        case (_, .bool): return false
+        case (.set, _): return true
+        case (_, .set): return false
+        case (.null, _): return true
+        case (_, .null): return false
+        case (.array, _): return true
+        case (_, .array): return false
         }
     }
 }

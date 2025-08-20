@@ -15,13 +15,29 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
         self.wrapped = wrapped
     }
 
+    /// Construct a TrustedScope by parsing a String of Datalog
+    /// - Parameters:
+    ///   - datalog: the datalog that will be parsed
+    /// - Throws: Throws a `DatalogError` on a parsing error
+    public init(_ datalog: String) throws {
+        var parser = Parser(datalog)
+        self = try parser.parseScope()
+    }
+
+    /// Construct a TrustedScope from an algorithm and its hex-encoded representation
+    /// Throws: Throws a ValidationError if hexString is not a valid hex-encoded string
+    public init(algorithm: Biscuit.SigningAlgorithm, hexString: String) throws {
+        self.wrapped = try .publicKey(Biscuit.ThirdPartyKey(algorithm: algorithm, hexString: hexString))
+    }
+
     init(proto: Biscuit_Format_Schema_Scope, interner: BlockInternmentTable) throws {
-        self.wrapped = switch proto.content {
+        self.wrapped =
+            switch proto.content {
             case .scopeType(.authority): .authority
             case .scopeType(.previous): .previous
             case .publicKey(let key): try .publicKey(interner.lookupPublicKey(Int(key)))
             case .none: throw Biscuit.ValidationError.missingScope
-        }
+            }
     }
 
     static func publicKey<Key: Biscuit.PublicKey>(_ key: Key) -> TrustedScope {
@@ -37,18 +53,18 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
     func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Scope {
         var proto = Biscuit_Format_Schema_Scope()
         switch self.wrapped {
-            case .authority: proto.scopeType = .authority
-            case .previous: proto.scopeType = .previous
-            case .publicKey(let key): proto.publicKey = Int64(interner.publicKeyIndex(for: key))
+        case .authority: proto.scopeType = .authority
+        case .previous: proto.scopeType = .previous
+        case .publicKey(let key): proto.publicKey = Int64(interner.publicKeyIndex(for: key))
         }
         return proto
     }
 
     public var description: String {
         switch self.wrapped {
-            case .authority: "authority"
-            case .previous: "previous"
-            case .publicKey(let key): "\(key)"
+        case .authority: "authority"
+        case .previous: "previous"
+        case .publicKey(let key): "\(key)"
         }
     }
 
@@ -70,7 +86,7 @@ extension TrustedScopeConvertible where Self == TrustedScope {
 extension Biscuit.PublicKey {
     public var trustedScope: TrustedScope { .publicKey(self) }
 }
-extension Biscuit.ThirdPartyKey: TrustedScopeConvertible  {
+extension Biscuit.ThirdPartyKey: TrustedScopeConvertible {
     public var trustedScope: TrustedScope {
         TrustedScope(.publicKey(self))
     }

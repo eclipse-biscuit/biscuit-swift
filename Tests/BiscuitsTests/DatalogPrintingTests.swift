@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import XCTest
+
 @testable import Biscuits
 
 final class DatalogPrintingTests: XCTestCase {
     func testPrintExpression() {
         XCTAssertEqual("\(0.term.lessThan(1))", "0 < 1")
         XCTAssertEqual("\(true.term.equal(false.term.negated))", "true == !false")
-        XCTAssertEqual("\(Value.emptySet.contains(100))", "{}.contains(100)")
+        XCTAssertEqual("\(Value.emptySet.contains(100))", "{,}.contains(100)")
         XCTAssertEqual("\(Term(variable: "x").add(1))", "$x + 1")
         XCTAssertEqual("\(Data([0, 0]).term.length)", "hex:0000.length()")
     }

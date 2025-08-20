@@ -45,7 +45,7 @@ public struct Fact: Sendable, Hashable, CustomStringConvertible {
         self.values = [index.value, revocationID.value]
     }
 
-    init(proto: Biscuit_Format_Schema_PredicateV2, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Predicate, interner: BlockInternmentTable) throws {
         guard proto.hasName else {
             throw Biscuit.ValidationError.missingPredicate
         }
@@ -60,8 +60,8 @@ public struct Fact: Sendable, Hashable, CustomStringConvertible {
         }
     }
 
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_PredicateV2 {
-        var proto = Biscuit_Format_Schema_PredicateV2()
+    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Predicate {
+        var proto = Biscuit_Format_Schema_Predicate()
         proto.name = UInt64(interner.symbolIndex(for: self.name))
         proto.terms = self.values.map { $0.proto(interner) }
         return proto
@@ -71,13 +71,13 @@ public struct Fact: Sendable, Hashable, CustomStringConvertible {
         var vars = vars
         for (predicateTerm, factValue) in zip(predicate.terms, self.values) {
             switch predicateTerm.wrapped {
-                case .value(let predicateValue): guard predicateValue == factValue else { return nil }
-                case .variable(let variable):
-                    if let definedValue = vars[variable] {
-                        guard definedValue == factValue else { return nil }
-                    } else {
-                        vars[variable] = factValue
-                    }
+            case .value(let predicateValue): guard predicateValue == factValue else { return nil }
+            case .variable(let variable):
+                if let definedValue = vars[variable] {
+                    guard definedValue == factValue else { return nil }
+                } else {
+                    vars[variable] = factValue
+                }
             }
         }
         return vars
