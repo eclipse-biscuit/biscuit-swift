@@ -28,7 +28,8 @@ jobs:
     name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # TODO re-enable ubuntu-latest once the setup-swift action fixes https://github.com/swift-actions/setup-swift/issues/694
+        os: [macos-latest]
         swift: ["6.1"]
     runs-on: ${{ matrix.os }}
     steps:
