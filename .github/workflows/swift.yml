@@ -1,0 +1,43 @@
+name: Swift
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-format:
+    name: Check source code formatting
+    runs-on: macos-latest
+    steps:
+      - uses: swift-actions/setup-swift@v2.3.0
+        with:
+          swift-version: "6.1"
+      - uses: actions/checkout@v4
+      - name: Check formatting
+        run: |
+            swift-format format Sources --in-place --recursive 
+            swift-format format Tests --in-place --recursive 
+            if test -n "$(git ls-files -m)"; then
+              echo 'Some files were not properly formatted, please run `swift-format`'
+              git status
+              exit 1;
+            fi
+  build:
+    name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
+    strategy:
+      matrix:
+        # TODO re-enable ubuntu-latest once the setup-swift action fixes https://github.com/swift-actions/setup-swift/issues/694
+        os: [macos-latest]
+        swift: ["6.1"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: swift-actions/setup-swift@v2.3.0
+        with:
+          swift-version: ${{ matrix.swift }}
+      - uses: actions/checkout@v4
+      - name: Build
+        run: swift build
+      - name: Run tests
+        run: swift test
