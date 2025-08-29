@@ -471,7 +471,7 @@ public struct Biscuit: Sendable, Hashable {
         }
         proto.authority = try self.authority.proto(interner: self.interner.primary)
         proto.blocks = try self.attenuations.enumerated().map {
-            try $1.proto(interner: self.interner.blockTable(for: $0))
+            try $1.proto(interner: self.interner.blockTable(for: $0 + 1))
         }
         proto.proof = self.proof.proto
         return proto

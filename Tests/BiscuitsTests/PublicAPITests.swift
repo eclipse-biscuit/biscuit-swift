@@ -7,6 +7,35 @@ import Crypto
 import XCTest
 
 final class PublicAPITests: XCTestCase {
+    func testSerializingThirdPartySignedBlocks() throws {
+        let issuerPrivateKey = Curve25519.Signing.PrivateKey()
+        let attenuationPrivateKey = Curve25519.Signing.PrivateKey()
+
+        let biscuit = try Biscuit(rootKey: issuerPrivateKey) {
+            Fact("user", 1234)
+        }
+
+        let attenuatedToken = try biscuit.attenuated(thirdPartyKey: attenuationPrivateKey) {
+            Check.checkIf {
+                Predicate("operation", "read")
+            }
+        }
+
+        let serializedToken = try attenuatedToken.serializedData()
+
+        let deserializedToken = try Biscuit(
+            serializedData: serializedToken,
+            rootKey: issuerPrivateKey.publicKey
+        )
+
+        try deserializedToken.authorize {
+            Fact("operation", "read")
+            Policy.allowIf {
+                Predicate("user", 1234)
+            }
+        }
+    }
+
     func testAttenuatingAndAuthorizingABiscuit() throws {
         let userID = 1234;
         let signingKey = Curve25519.Signing.PrivateKey()
