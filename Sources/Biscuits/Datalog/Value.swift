@@ -78,7 +78,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     /// Construct a set value from a set of values
     ///
     /// Set values cannot contain other sets as elements
-    /// - Parameter from: a set of values
+    /// - Parameter set: a set of values
     /// - Returns: a value which is a set
     /// - Throws: Throws a `DatalogError` if one of the values is a set
     public static func set<V: ValueConvertible>(from set: Set<V>) throws -> Value {
@@ -116,7 +116,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     }
 
     /// Construct an array value from an array of values
-    /// - Parameter from: an array of values
+    /// - Parameter array: an array of values
     /// - Returns: a value which is an array
     public static func array<V: ValueConvertible>(from array: [V]) -> Value {
         Value(.array(array.map { $0.value }))
@@ -132,7 +132,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     }
 
     /// Construct a map value from  a Dictionary of map keys and values
-    /// - Parameter from: a dictionary of map keys to values
+    /// - Parameter map: a dictionary of map keys to values
     /// - Returns: a value which is a map
     /// - Throws: Throws a `DatalogError` if multiple different values are assigned to the same mapkey
     public static func map<K: MapKeyConvertible, V: ValueConvertible>(from map: [K: V]) throws -> Value {
@@ -155,6 +155,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     /// - Parameter pair: a tuple of a map key and a value that will be in the map
     /// - Returns: a value which is a map
     /// - Throws: Throws a `DatalogError` if multiple different values are assigned to the same mapkey
+    @_documentation(visibility: internal)
     public static func map<each K: MapKeyConvertible, each V: ValueConvertible>(
         _ pair: repeat (each K, each V)
     ) throws -> Value {

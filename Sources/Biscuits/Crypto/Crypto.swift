@@ -17,7 +17,7 @@ extension Biscuit {
         associatedtype PublicKey: Biscuit.PublicKey
         /// Produce a cryptographic signature
         /// - Parameters:
-        ///   - for: the data to be signed
+        ///   - input: the data to be signed
         func signature(for input: Data) throws -> Data
         /// The public key associated with this private key
         var publicKey: PublicKey { get }
@@ -28,7 +28,7 @@ extension Biscuit {
         /// Validate a cryptographic signature
         /// - Parameters:
         ///   - signature: the signature to be validated
-        ///   - for: the data signed with that signature
+        ///   - input: the data signed with that signature
         func isValidSignature(_ signature: Data, for input: Data) -> Bool
         /// Which algorithm this key uses
         var algorithm: SigningAlgorithm { get }

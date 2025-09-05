@@ -16,7 +16,7 @@ extension Biscuit {
     }
 
     /// Attenuate a token with a `ThirdPartyBlockContents`
-    /// - Parameter block: the contents of the block that will be used to attenuate this token
+    /// - Parameter contents: the contents of the block that will be used to attenuate this token
     /// - Parameter algorithm: the algorithm that will be used for the next attenuation
     /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed and signing may throw an
     /// error
@@ -73,7 +73,7 @@ extension Biscuit {
         /// Generates a block that can be used to attenuate a Biscuit.
         /// - Parameter privateKey: The key that will be used to sign this block
         /// - Parameter context: Any context that will be added to this block.
-        /// - Parameter using: The datalog content of this block.
+        /// - Parameter datalog: The datalog content of this block.
         /// - Throws: May throw an error during signing
         public func generateBlock<Key: PrivateKey>(
             privateKey: Key,
@@ -84,7 +84,7 @@ extension Biscuit {
         }
 
         /// Generates a block that can be used to attenuate a Biscuit.
-        /// - Parameter using: The datalog content of this block as a String.
+        /// - Parameter datalog: The datalog content of this block as a String.
         /// - Parameter privateKey: The key that will be used to sign this block
         /// - Parameter context: Any context that will be added to this block.
         /// - Returns: the ThirdPartyBlockContents
