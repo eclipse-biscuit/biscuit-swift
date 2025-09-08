@@ -27,6 +27,10 @@ final class GenerationTests: XCTestCase {
             XCTAssertEqual(expected.signedByThirdParty, block.signedByThirdParty)
             compareBlocks(expected.datalog, block.datalog)
         }
+
+        let serialized = try biscuit.serializedData()
+        let deserialized = try Biscuit(serializedData: serialized, rootKey: rootPublicKey)
+        XCTAssertEqual(biscuit, deserialized)
     }
 
     func compareBlocks(_ lhs: Biscuit.DatalogBlock, _ rhs: Biscuit.DatalogBlock) {
