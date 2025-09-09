@@ -22,7 +22,7 @@ public struct Predicate: Sendable, Hashable, CustomStringConvertible {
 
     /// Construct a predicate by parsing a String of Datalog
     /// - Parameters:
-    ///   - using: the datalog that will be parsed
+    ///   - datalog: the datalog that will be parsed
     /// - Throws: Throws a `DatalogError` on a parsing error
     public init(_ datalog: String) throws {
         self = try Parser.predicate(using: datalog)

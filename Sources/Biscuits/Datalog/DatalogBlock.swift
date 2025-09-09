@@ -54,6 +54,7 @@ extension Biscuit {
 
         /// Construct a DatalogBlock from a String of Datalog
         ///
+        /// - Parameter context: the context that will be included with this DatalogBlock
         /// - Parameter datalog: the Datalog contents of this DatalogBlock as a String
         public init(_ datalog: String, context: String? = nil) throws {
             let parser = try Parser.forDatalogBlock(using: datalog)

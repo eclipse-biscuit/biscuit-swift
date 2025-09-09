@@ -10,7 +10,7 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
     let ops: [Op]
 
     /// Construct a closure
-    /// - Parameter parameter: the names of this closure's parameter variables
+    /// - Parameter parameters: the names of this closure's parameter variables
     /// - Parameter body: the body of this closure
     public init<E: ExpressionConvertible>(_ parameters: String..., body: E) {
         self.params = parameters

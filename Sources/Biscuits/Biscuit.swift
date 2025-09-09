@@ -27,7 +27,7 @@ public struct Biscuit: Sendable, Hashable {
     ///   - rootKeyID: the identifier of the rootKey
     ///   - algorithm: which signing algorithm to use to seal or attenuate this Biscuit
     ///   - context: context information which can be carried with this Biscuit
-    ///   - using: the datalog contents of the authority block
+    ///   - datalog: the datalog contents of the authority block
     /// - Throws: Signing may throw an error
     public init<Key: PrivateKey>(
         rootKey: Key,
@@ -48,7 +48,7 @@ public struct Biscuit: Sendable, Hashable {
     /// Creates a new Biscuit.
     ///
     /// - Parameters:
-    ///   - authorityBlock: the datalog contents of the authority block, as a String
+    ///   - datalog: the datalog contents of the authority block, as a String
     ///   - rootKey: the key that will sign the authority block
     ///   - rootKeyID: the identifier of the rootKey
     ///   - algorithm: which signing algorithm to use to seal or attenuate this Biscuit
@@ -173,7 +173,7 @@ public struct Biscuit: Sendable, Hashable {
     /// to determine which key should have been used to sign it.
     ///
     /// - Parameters:
-    ///   - serializedData: the base64url representation of the Biscuit
+    ///   - base64URLEncoded: the base64url representation of the Biscuit
     ///   - getRootKey: returns the key that is expected to have signed this Biscuit; if the
     ///   Biscuit contains a RootKeyID, that is passed as a parameter
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if
@@ -214,7 +214,7 @@ public struct Biscuit: Sendable, Hashable {
     /// - Parameters:
     ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
     ///   - context: context information which can be carried with the attenuation
-    ///   - using: the datalog contents of the attenuation
+    ///   - datalog: the datalog contents of the attenuation
     /// - Returns: the attenuated Biscuit
     /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed and signing may throw an
     /// error
@@ -233,7 +233,7 @@ public struct Biscuit: Sendable, Hashable {
     ///   - thirdPartyKey: this key will be used to sign the attenuation
     ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
     ///   - context: context information which can be carried with the attenuation
-    ///   - using: the datalog contents of the attenuation
+    ///   - datalog: the datalog contents of the attenuation
     /// - Returns: the attenuated Biscuit
     /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed and signing may throw an
     /// error
@@ -255,7 +255,7 @@ public struct Biscuit: Sendable, Hashable {
     /// scope. This Biscuit remains unattenuated.
     ///
     /// - Parameters:
-    ///   - using: the datalog contents of the attenuation, as a String
+    ///   - datalog: the datalog contents of the attenuation, as a String
     ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
     ///   - context: context information which can be carried with the attenuation
     /// - Returns: the attenuated Biscuit
@@ -277,7 +277,7 @@ public struct Biscuit: Sendable, Hashable {
     /// scope. This Biscuit remains unattenuated.
     ///
     /// - Parameters:
-    ///   - using: the datalog contents of the attenuation, as a String
+    ///   - datalog: the datalog contents of the attenuation, as a String
     ///   - thirdPartyKey: this key will be used to sign the attenuation
     ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
     ///   - context: context information which can be carried with the attenuation
@@ -302,7 +302,7 @@ public struct Biscuit: Sendable, Hashable {
     /// scope. This Biscuit remains unattenuated.
     ///
     /// - Parameters:
-    ///   - using: the datalog contents of the attenuation, as a String
+    ///   - datalog: the datalog contents of the attenuation, as a String
     ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
     ///   - context: context information which can be carried with the attenuation
     /// - Returns: the attenuated Biscuit
@@ -339,7 +339,7 @@ public struct Biscuit: Sendable, Hashable {
     /// scope. This Biscuit remains unattenuated.
     ///
     /// - Parameters:
-    ///   - using: the datalog contents of the attenuation
+    ///   - datalog: the datalog contents of the attenuation
     ///   - thirdPartyKey: this key will be used to sign the attenuation
     ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
     ///   - context: context information which can be carried with the attenuation
@@ -401,7 +401,7 @@ public struct Biscuit: Sendable, Hashable {
 
     /// Authorize this Biscuit
     /// - Parameter limitedBy: Limitations on the runtime for this query
-    /// - Parameter authorizer: the authorizer datalog used to validate this Biscuit
+    /// - Parameter datalog: the authorizer datalog used to validate this Biscuit
     /// - Returns: The Authorization describing the successful authorization attempt
     /// - Throws: Throws an `AuthorizationError` if the biscuit does not pass authorization, or an
     /// `EvaluationError` if the biscuit or the authorizer cannot be evaluated
@@ -416,7 +416,7 @@ public struct Biscuit: Sendable, Hashable {
     }
 
     /// Authorize this Biscuit
-    /// - Parameter using: the authorizer datalog used to validate this Biscuit, as a String
+    /// - Parameter datalog: the authorizer datalog used to validate this Biscuit, as a String
     /// - Parameter limitedBy: Limitations on the runtime for this query
     /// - Returns: The Authorization describing the successful authorization attempt
     /// - Throws: Throws an `AuthorizationError` if the biscuit does not pass authorization, an
@@ -431,7 +431,7 @@ public struct Biscuit: Sendable, Hashable {
     }
 
     /// Authorize this Biscuit
-    /// - Parameter using: the authorizer datalog used to validate this Biscuit
+    /// - Parameter authorizer: the authorizer datalog used to validate this Biscuit
     /// - Returns: The Authorization describing the successful authorization attempt
     /// - Throws: Throws an `AuthorizationError` if the biscuit does not pass authorization, an
     /// `EvaluationError` if the biscuit or the authorizer cannot be evaluated
@@ -507,7 +507,7 @@ public struct Biscuit: Sendable, Hashable {
     }
 
     /// Query the biscuit to check if a certain statement holds true
-    /// - Parameter using: The Check to use to query the biscuit
+    /// - Parameter check: The Check to use to query the biscuit
     /// - Parameter limitedBy: Limitations on the runtime for this query
     /// - Returns: Whether or not the query succeeded
     /// - Throws: Throws an `AuthorizationError` if the biscuit does not pass authorization, or an
@@ -540,7 +540,8 @@ public struct Biscuit: Sendable, Hashable {
     }
 
     /// Query the biscuit to check if a certain statement holds true
-    /// - Parameter using: The check to use to query the biscuit, as a String
+    /// - Parameter datalog: The check to use to query the biscuit, as a String
+    /// - Parameter limitedBy: Limitations on the runtime for this query
     /// - Returns: Whether or not the query succeeded
     /// - Throws: Throws an `AuthorizationError` if the biscuit does not pass authorization, or an
     /// `EvaluationError` if the biscuit or the authorizer cannot be evaluated, and parsing the

@@ -95,7 +95,7 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
     ///
     /// The body of this check will be equivalent to: `check if time($time), $time <= expirationDate;`
     ///
-    /// - Parameter at: the Date at which this token expires
+    /// - Parameter expirationDate: the Date at which this token expires
     public static func tokenExpires(at expirationDate: Date) -> Check {
         Check.checkIf {
             Predicate("time", Term(variable: "time"))
