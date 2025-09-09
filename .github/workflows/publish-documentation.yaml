@@ -26,7 +26,8 @@ jobs:
                  --output-path docs
       - name: Publish documentation
         run: |
-          echo '{}' > docs/theme-settings.json
+          rm docs/index.html # force redirection to /documentation/biscuits/
+          cp netlify.toml docs/netlify.toml
           zip -r biscuit-swift.zip docs
           curl -H "Content-Type: application/zip" \
                -H "Authorization: Bearer ${{ secrets.NETLIFY_TOKEN }}" \
