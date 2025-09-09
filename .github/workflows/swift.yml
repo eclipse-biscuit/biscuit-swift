@@ -24,6 +24,22 @@ jobs:
               git status
               exit 1;
             fi
+  build-doc:
+    name: Build documentation
+    runs-on: macos-latest
+    steps:
+      - uses: swift-actions/setup-swift@v2.3.0
+        with:
+          swift-version: "6.1"
+      - uses: actions/checkout@v4
+      - name: Build documentation
+        run: |
+            swift package --allow-writing-to-directory docs \
+                 generate-documentation \
+                 --target Biscuits \
+                 --disable-indexing \
+                 --transform-for-static-hosting \
+                 --output-path docs
   build:
     name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
     strategy:

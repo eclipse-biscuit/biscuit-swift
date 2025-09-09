@@ -1,0 +1,36 @@
+name: Publish documentation
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-doc:
+    name: Build documentation
+    runs-on: macos-latest
+    steps:
+      - uses: swift-actions/setup-swift@v2.3.0
+        with:
+          swift-version: "6.1"
+      - uses: actions/checkout@v4
+      - name: Build documentation
+        run: |
+            swift package --allow-writing-to-directory docs \
+                 generate-documentation \
+                 --target Biscuits \
+                 --disable-indexing \
+                 --transform-for-static-hosting \
+                 --output-path docs
+      - name: Publish documentation
+        run: |
+          rm docs/index.html # force redirection to /documentation/biscuits/
+          cp netlify.toml docs/netlify.toml
+          zip -r biscuit-swift.zip docs
+          curl -H "Content-Type: application/zip" \
+               -H "Authorization: Bearer ${{ secrets.NETLIFY_TOKEN }}" \
+               --fail-with-body \
+               --data-binary @biscuit-swift.zip \
+               https://api.netlify.com/api/v1/sites/biscuit-swift.netlify.app/deploys
