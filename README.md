@@ -7,7 +7,7 @@ variant for describing the rights and restrictions on a biscuit.
 
 The complete API documentation for this library can be found at https://swift.biscuitsec.org.
 Additional information about biscuits and the Biscuit Project can be found at
-https://www.biscuitsec.org.
+<https://www.biscuitsec.org>.
 
 ## Tutorial
 
