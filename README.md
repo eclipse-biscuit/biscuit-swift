@@ -5,7 +5,7 @@ and offline attenuation. This library provides an implementation of biscuits in 
 to specifying a binary representation and cryptographic primitives, Biscuits specifies a Datalog
 variant for describing the rights and restrictions on a biscuit.
 
-The complete API documentation for this library can be found at https://swift.biscuitsec.org.
+The complete API documentation for this library can be found at <https://swift.biscuitsec.org>.
 Additional information about biscuits and the Biscuit Project can be found at
 <https://www.biscuitsec.org>.
 
