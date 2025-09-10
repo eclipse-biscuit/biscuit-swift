@@ -1,7 +1,7 @@
 # A Swift implementation of biscuits
 
 Biscuits is a specification for authorization tokens designed to support decentralized validation
-and offline attenuation. This library provides an implementation of biscuits in Swift. In additiona
+and offline attenuation. This library provides an implementation of biscuits in Swift. In addition
 to specifying a binary representation and cryptographic primitives, Biscuits specifies a Datalog
 variant for describing the rights and restrictions on a biscuit.
 
@@ -16,7 +16,7 @@ Such tokens can be constructed, attenuated, authorized, serialized, deserialized
 
 The library exposes protocols for valid public and private keys; these protocols are implemented by
 the `Curve25519`, `P256` and `SecureEnclave.P256` types from [swift-crypto][swift-crypto]; users may
-also add implementations for alternative implementats of ed25519 and secp256r1 if they desire.
+also add implementations for alternative implementations of ed25519 and secp256r1 if they desire.
 
 The Datalog contents of a biscuit token can be encoded in two ways: either as a string, which will be
 parsed at runtime, or using a DSL provided by the library which is type safe and avoids the risk
@@ -44,7 +44,7 @@ let userToken = try Biscuit(rootKey: issuerPrivateKey) {
 ```
 
 In addition to using that biscuit as a bearer token themselves, that user would be able to attenuate
-it to give a third party service read-only access to resoures under the `/foo` directory:
+it to give a third party service read-only access to resources under the `/foo` directory:
 
 ```swift
 let readOnlyFooToken = try userToken.attenuated() {
