@@ -3,8 +3,11 @@
 Biscuits is a specification for authorization tokens designed to support decentralized validation
 and offline attenuation. This library provides an implementation of biscuits in Swift. In additiona
 to specifying a binary representation and cryptographic primitives, Biscuits specifies a Datalog
-variant for describing the rights and restrictions on a biscuit. More information about biscuits can
-be found at https://www.biscuitsec.org
+variant for describing the rights and restrictions on a biscuit.
+
+The complete API documentation for this library can be found at https://swift.biscuitsec.org.
+Additional information about biscuits and the Biscuit Project can be found at
+https://www.biscuitsec.org.
 
 ## Tutorial
 
