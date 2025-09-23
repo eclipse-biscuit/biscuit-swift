@@ -48,6 +48,19 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         self.interner = interner
     }
 
+    init(
+        _ parent: UnverifiedBiscuit,
+        _ attenuations: [Biscuit.Block],
+        _ interner: InternmentTables,
+        _ proof: Biscuit.Proof
+    ) {
+        self.interner = interner
+        self.rootKeyID = parent.rootKeyID
+        self.authority = parent.authority
+        self.attenuations = attenuations
+        self.proof = proof
+    }
+
     /// Verify a biscuit using a specific key, returning a Biscuit now that verification is
     /// complete.
     ///
@@ -75,6 +88,197 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
             lastBlock = block
         }
         return Biscuit(unverifiedBiscuit: self)
+    }
+
+    /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
+    /// scope. This Biscuit remains unattenuated.
+    ///
+    /// - Parameters:
+    ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
+    ///   - context: context information which can be carried with the attenuation
+    ///   - datalog: the datalog contents of the attenuation
+    /// - Returns: the attenuated Biscuit
+    /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed and signing may throw an
+    /// error
+    public func attenuated(
+        algorithm: Biscuit.SigningAlgorithm = .ed25519,
+        context: String? = nil,
+        @Biscuit.DatalogBlock using datalog: () throws -> Biscuit.DatalogBlock
+    ) throws -> UnverifiedBiscuit {
+        try self.attenuated(using: datalog(), algorithm: algorithm, context: context)
+    }
+
+    /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
+    /// scope. This Biscuit remains unattenuated.
+    ///
+    /// - Parameters:
+    ///   - thirdPartyKey: this key will be used to sign the attenuation
+    ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
+    ///   - context: context information which can be carried with the attenuation
+    ///   - datalog: the datalog contents of the attenuation
+    /// - Returns: the attenuated Biscuit
+    /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed and signing may throw an
+    /// error
+    public func attenuated<Key: Biscuit.PrivateKey>(
+        thirdPartyKey: Key,
+        algorithm: Biscuit.SigningAlgorithm = .ed25519,
+        context: String? = nil,
+        @Biscuit.DatalogBlock using datalog: () throws -> Biscuit.DatalogBlock
+    ) throws -> UnverifiedBiscuit {
+        try self.attenuated(
+            using: datalog(),
+            thirdPartyKey: thirdPartyKey,
+            algorithm: algorithm,
+            context: context
+        )
+    }
+
+    /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
+    /// scope. This Biscuit remains unattenuated.
+    ///
+    /// - Parameters:
+    ///   - datalog: the datalog contents of the attenuation, as a String
+    ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
+    ///   - context: context information which can be carried with the attenuation
+    /// - Returns: the attenuated Biscuit
+    /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed or a `DatalogError` if
+    /// the datalog string cannot be parsed, and signing may throw an error
+    public func attenuated(
+        using datalog: String,
+        algorithm: Biscuit.SigningAlgorithm = .ed25519,
+        context: String? = nil
+    ) throws -> UnverifiedBiscuit {
+        try self.attenuated(
+            using: Biscuit.DatalogBlock(datalog),
+            algorithm: algorithm,
+            context: context
+        )
+    }
+
+    /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
+    /// scope. This Biscuit remains unattenuated.
+    ///
+    /// - Parameters:
+    ///   - datalog: the datalog contents of the attenuation, as a String
+    ///   - thirdPartyKey: this key will be used to sign the attenuation
+    ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
+    ///   - context: context information which can be carried with the attenuation
+    /// - Returns: the attenuated Biscuit
+    /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed or a `DatalogError` if
+    /// the datalog string cannot be parsed, and signing may throw an error
+    public func attenuated<Key: Biscuit.PrivateKey>(
+        using datalog: String,
+        thirdPartyKey: Key,
+        algorithm: Biscuit.SigningAlgorithm = .ed25519,
+        context: String? = nil
+    ) throws -> UnverifiedBiscuit {
+        try self.attenuated(
+            using: Biscuit.DatalogBlock(datalog),
+            thirdPartyKey: thirdPartyKey,
+            algorithm: algorithm,
+            context: context
+        )
+    }
+
+    /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
+    /// scope. This Biscuit remains unattenuated.
+    ///
+    /// - Parameters:
+    ///   - datalog: the datalog contents of the attenuation, as a String
+    ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
+    ///   - context: context information which can be carried with the attenuation
+    /// - Returns: the attenuated Biscuit
+    /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed or a `DatalogError` if
+    /// the datalog string cannot be parsed, and signing may throw an error
+    public func attenuated(
+        using datalog: Biscuit.DatalogBlock,
+        algorithm: Biscuit.SigningAlgorithm = .ed25519,
+        context: String? = nil
+    ) throws -> UnverifiedBiscuit {
+        guard case .nextSecret(let lastKey) = self.proof else {
+            throw Biscuit.AttenuationError.cannotAttenuateSealedToken
+        }
+        var interner = self.interner
+        var attenuation = datalog
+        attenuation.attachToBiscuit(interner: &interner.primary, context: context)
+        let nextKey = Biscuit.InternalPrivateKey(algorithm: algorithm)
+        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
+        var attenuations = self.attenuations
+        try attenuations.append(
+            Biscuit.Block(
+                datalog: attenuation,
+                nextKey: nextKey.publicKey,
+                lastKey: lastKey,
+                lastSig: lastSig,
+                externalSignature: nil,
+                interner: interner.primary
+            )
+        )
+        return UnverifiedBiscuit(self, attenuations, interner, .nextSecret(nextKey))
+    }
+
+    /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
+    /// scope. This Biscuit remains unattenuated.
+    ///
+    /// - Parameters:
+    ///   - datalog: the datalog contents of the attenuation
+    ///   - thirdPartyKey: this key will be used to sign the attenuation
+    ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
+    ///   - context: context information which can be carried with the attenuation
+    /// - Returns: the attenuated Biscuit
+    /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed and signing may throw an
+    /// error
+    public func attenuated<Key: Biscuit.PrivateKey>(
+        using datalog: Biscuit.DatalogBlock,
+        thirdPartyKey: Key,
+        algorithm: Biscuit.SigningAlgorithm = .ed25519,
+        context: String? = nil
+    ) throws -> UnverifiedBiscuit {
+        guard case .nextSecret(let lastKey) = self.proof else {
+            throw Biscuit.AttenuationError.cannotAttenuateSealedToken
+        }
+        var blockInterner = BlockInternmentTable()
+        var attenuation = datalog
+        attenuation.attachToBiscuit(interner: &blockInterner, context: context)
+        let nextKey = Biscuit.InternalPrivateKey(algorithm: algorithm)
+        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
+        var attenuations = self.attenuations
+        let externalSignature = try Biscuit.Block.ExternalSignature(
+            block: attenuation,
+            lastSig: lastSig,
+            thirdPartyKey: thirdPartyKey,
+            interner: blockInterner
+        )
+        try attenuations.append(
+            Biscuit.Block(
+                datalog: attenuation,
+                nextKey: nextKey.publicKey,
+                lastKey: lastKey,
+                lastSig: lastSig,
+                externalSignature: externalSignature,
+                interner: blockInterner
+            )
+        )
+        var interner = self.interner
+        interner.setBlockTable(blockInterner, for: attenuations.count)
+        return UnverifiedBiscuit(self, attenuations, interner, .nextSecret(nextKey))
+    }
+
+    /// Seal this Biscuit, producing a new Biscuit which cannot be attenuated further. This Biscuit
+    /// remains unchanged.
+    ///
+    /// - Returns: the sealed Biscuit
+    /// - Throws: Signing may throw an error
+    public func sealed() throws -> UnverifiedBiscuit {
+        if case .nextSecret(let key) = self.proof {
+            let sig = try key.sealingSignature(
+                for: self.attenuations.last ?? self.authority,
+                interner: self.interner.blockTable(for: self.attenuations.count)
+            )
+            return UnverifiedBiscuit(self, self.attenuations, self.interner, .finalSignature(sig))
+        } else {
+            return self
+        }
     }
 
     /// Serialize this UnverifiedBiscuit to its data representation
