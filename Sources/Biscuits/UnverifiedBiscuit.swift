@@ -48,6 +48,27 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         self.interner = interner
     }
 
+    /// Deserializes an UnverifiedBiscuit from its base64url representation without
+    /// cryptographically verifying that it is authentic.
+    ///
+    /// - Parameters:
+    ///   - base64URLEncoded: the base64url representation of the Biscuit
+    /// - Throws: Validation may throw a protobuf error or a `ValidationError` if base64url or the
+    /// underlying data is not in the proper format
+    public init(base64URLEncoded: String) throws {
+        // Translate base64url into base64, ignoring padding, as defined in RFC4648.
+        let base64Encoded =
+            base64URLEncoded
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+
+        guard let data = Data(base64Encoded: base64Encoded) else {
+            throw Biscuit.ValidationError.invalidBase64URLString
+        }
+
+        try self.init(serializedData: data)
+    }
+
     init(
         _ parent: UnverifiedBiscuit,
         _ attenuations: [Biscuit.Block],
@@ -286,6 +307,18 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     /// - Throws: May throw an error if protobuf serialization fails
     public func serializedData() throws -> Data {
         try self.proto().serializedData()
+    }
+
+    /// Serialize this UnverifiedBiscuit to its base64url encoded representation
+    /// - Returns: the base64url encoded representation of this Biscuit
+    /// - Throws: May thow an error if protobuf serialization fails
+    public func base64URLEncoded() throws -> String {
+        let base64Encoded = try self.proto().serializedData().base64EncodedString()
+        // Translate base64 into base64url, ignoring padding, as defined in RFC4648.
+        return
+            base64Encoded
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
     }
 
     func proto() throws -> Biscuit_Format_Schema_Biscuit {
