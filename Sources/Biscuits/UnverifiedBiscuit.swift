@@ -334,6 +334,45 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         return proto
     }
 
+    /// Generates a request for a third party to attenuate this token
+    public func generateThirdPartyBlockRequest() -> Biscuit.ThirdPartyBlockRequest {
+        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
+        return Biscuit.ThirdPartyBlockRequest(previousSignature: lastSig)
+    }
+
+    /// Attenuate a token with a `ThirdPartyBlockContents`
+    /// - Parameter contents: the contents of the block that will be used to attenuate this token
+    /// - Parameter algorithm: the algorithm that will be used for the next attenuation
+    /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed and signing may throw an
+    /// error
+    public func attenuated(
+        using contents: Biscuit.ThirdPartyBlockContents,
+        algorithm: Biscuit.SigningAlgorithm = .ed25519
+    ) throws -> UnverifiedBiscuit {
+        guard case .nextSecret(let lastKey) = self.proof else {
+            throw Biscuit.AttenuationError.cannotAttenuateSealedToken
+        }
+        let nextKey = Biscuit.InternalPrivateKey(algorithm: algorithm)
+        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
+        let attenuation = try Biscuit.Block(
+            datalog: contents.payload,
+            nextKey: nextKey.publicKey,
+            lastKey: lastKey,
+            lastSig: lastSig,
+            externalSignature: contents.externalSignature,
+            interner: contents.interner
+        )
+        try contents.externalSignature.isValidSignature(
+            for: attenuation,
+            lastSig: lastSig,
+            interner: contents.interner
+        )
+        let attenuations = self.attenuations + [attenuation]
+        var interner = self.interner
+        interner.setBlockTable(contents.interner, for: attenuations.count)
+        return UnverifiedBiscuit(self, attenuations, interner, .nextSecret(nextKey))
+    }
+
     /// Whether or not this UnverifiedBiscuit has been sealed
     public var isSealed: Bool { self.proof.isSealed }
 }
