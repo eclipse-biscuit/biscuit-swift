@@ -17,6 +17,21 @@ final class GenerationTests: XCTestCase {
         rawRepresentation: hexDecode("99e87b0e9158531eeeb503ff15266e2b23c2a2507b138c9d1b1f2ab458df2d61")!
     )
 
+    func compareUnverifiedBiscuit(_ biscuit: UnverifiedBiscuit, with resource: String) throws {
+        let biscuitPath = Bundle.module.path(forResource: resource, ofType: "bc")!
+        let biscuitData = try! Data(contentsOf: URL(fileURLWithPath: biscuitPath), options: .mappedIfSafe)
+        let expected = try UnverifiedBiscuit(serializedData: biscuitData)
+        compareBlocks(expected.authority.datalog, biscuit.authority.datalog)
+        XCTAssertEqual(expected.attenuations.count, biscuit.attenuations.count)
+        for (expected, block) in zip(expected.attenuations, biscuit.attenuations) {
+            XCTAssertEqual(expected.signedByThirdParty, block.signedByThirdParty)
+            compareBlocks(expected.datalog, block.datalog)
+        }
+        let serialized = try biscuit.serializedData()
+        let deserialized = try UnverifiedBiscuit(serializedData: serialized)
+        XCTAssertEqual(biscuit, deserialized)
+    }
+
     func compareBiscuit(_ biscuit: Biscuit, with resource: String) throws {
         let biscuitPath = Bundle.module.path(forResource: resource, ofType: "bc")!
         let biscuitData = try! Data(contentsOf: URL(fileURLWithPath: biscuitPath), options: .mappedIfSafe)
@@ -68,6 +83,44 @@ final class GenerationTests: XCTestCase {
             XCTAssertEqual(lhs.expressions, rhs.expressions)
             XCTAssertEqual(lhs.trusted, rhs.trusted)
         }
+    }
+
+    func testUnverifiedBasicToken() throws {
+        let biscuit = try Biscuit(
+            authorityBlock: """
+                    right("file1", "read");
+                    right("file2", "read");
+                    right("file1", "write");
+                """,
+            rootKey: self.rootPrivateKey
+        )
+        var unverifiedBiscuit = try UnverifiedBiscuit(serializedData: biscuit.serializedData())
+        unverifiedBiscuit = try unverifiedBiscuit.attenuated(
+            using: """
+                    check if resource($0), operation("read"), right($0, "read");
+                """
+        )
+        try compareUnverifiedBiscuit(unverifiedBiscuit, with: "test001_basic")
+    }
+
+    func testUnverifiedBasicTokenDSL() throws {
+        let biscuit = try Biscuit(
+            authorityBlock: """
+                    right("file1", "read");
+                    right("file2", "read");
+                    right("file1", "write");
+                """,
+            rootKey: self.rootPrivateKey
+        )
+        var unverifiedBiscuit = try UnverifiedBiscuit(serializedData: biscuit.serializedData())
+        unverifiedBiscuit = try unverifiedBiscuit.attenuated {
+            Check.checkIf {
+                Predicate("resource", Term(variable: "0"))
+                Predicate("operation", "read")
+                Predicate("right", Term(variable: "0"), "read")
+            }
+        }
+        try compareUnverifiedBiscuit(unverifiedBiscuit, with: "test001_basic")
     }
 
     func testBasicToken() throws {
