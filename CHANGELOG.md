@@ -1,3 +1,7 @@
+# `1.1.1`
+
+- Fix `secp256r1` signatures (#15)
+
 # `1.1.0`
 
 - Additional operations on `UnverifiedBiscuit` (#13)
