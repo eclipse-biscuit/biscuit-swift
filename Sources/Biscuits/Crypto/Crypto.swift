@@ -41,14 +41,14 @@ extension Curve25519.Signing.PrivateKey: Biscuit.PrivateKey {}
 
 extension P256.Signing.PrivateKey: Biscuit.PrivateKey {
     public func signature(for input: Data) throws -> Data {
-        try self.signature(for: input).rawRepresentation
+        try self.signature(for: input).derRepresentation
     }
 }
 
 #if os(Darwin)
 extension SecureEnclave.P256.Signing.PrivateKey: Biscuit.PrivateKey {
     public func signature(for input: Data) throws -> Data {
-        try self.signature(for: input).rawRepresentation
+        try self.signature(for: input).derRepresentation
     }
 }
 #endif

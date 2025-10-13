@@ -38,10 +38,23 @@ final class GenerationTests: XCTestCase {
         let expected = try Biscuit(serializedData: biscuitData) { _ in self.rootPublicKey }
         compareBlocks(expected.authority.datalog, biscuit.authority.datalog)
         XCTAssertEqual(expected.attenuations.count, biscuit.attenuations.count)
-        for (expected, block) in zip(expected.attenuations, biscuit.attenuations) {
+        var previous = biscuit.authority
+        for (idx, (expected, block)) in zip(expected.attenuations, biscuit.attenuations).enumerated() {
             XCTAssertEqual(expected.signedByThirdParty, block.signedByThirdParty)
             compareBlocks(expected.datalog, block.datalog)
+
+            let interner = biscuit.interner.blockTable(for: idx + 1)
+            let signatureInput = try block.signatureInput(interner: interner, lastSig: previous.signature)
+            XCTAssert(previous.nextKey.isValidSignature(block.signature, for: signatureInput))
+            if let externalSignature = block.externalSignature {
+                try externalSignature.isValidSignature(for: block, lastSig: previous.signature, interner: interner)
+            }
+            previous = block
         }
+        try biscuit.proof.isValidProof(
+            for: previous,
+            interner: biscuit.interner.blockTable(for: biscuit.attenuations.count)
+        )
 
         let serialized = try biscuit.serializedData()
         let deserialized = try Biscuit(serializedData: serialized, rootKey: rootPublicKey)
@@ -147,6 +160,22 @@ final class GenerationTests: XCTestCase {
             Fact("right", "file1", "write")
         }
         biscuit = try biscuit.attenuated {
+            Check.checkIf {
+                Predicate("resource", Term(variable: "0"))
+                Predicate("operation", "read")
+                Predicate("right", Term(variable: "0"), "read")
+            }
+        }
+        try compareBiscuit(biscuit, with: "test001_basic")
+    }
+
+    func testBasicTokenECDSA() throws {
+        var biscuit = try Biscuit(rootKey: self.rootPrivateKey, algorithm: .secp256r1) {
+            Fact("right", "file1", "read")
+            Fact("right", "file2", "read")
+            Fact("right", "file1", "write")
+        }
+        biscuit = try biscuit.attenuated(algorithm: .secp256r1) {
             Check.checkIf {
                 Predicate("resource", Term(variable: "0"))
                 Predicate("operation", "read")
@@ -463,6 +492,26 @@ final class GenerationTests: XCTestCase {
                     check if right("read");
                 """,
             thirdPartyKey: Curve25519.Signing.PrivateKey()
+        )
+        try compareBiscuit(biscuit, with: "test024_third_party")
+    }
+
+    func testThirdPartyECDSA() throws {
+        var biscuit = try Biscuit(
+            authorityBlock: """
+                    right("read");
+                    check if group("admin") trusting ed25519/acdd6d5b53bfee478bf689f8e012fe7988bf755e3d7c5152947abc149bc20189;
+                """,
+            rootKey: self.rootPrivateKey,
+            algorithm: .secp256r1
+        )
+        biscuit = try biscuit.attenuated(
+            using: """
+                    group("admin");
+                    check if right("read");
+                """,
+            thirdPartyKey: P256.Signing.PrivateKey(),
+            algorithm: .secp256r1
         )
         try compareBiscuit(biscuit, with: "test024_third_party")
     }
