@@ -5,8 +5,6 @@
 struct Parser {
     var lexer: Lexer
     var currentToken: Token?
-    var symbols: [String] = []
-    var publicKeys: [Biscuit.ThirdPartyKey] = []
     var origins: [TrustedScope] = []
     var policies: [Policy] = []
     var checks: [Check] = []

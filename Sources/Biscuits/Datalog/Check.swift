@@ -113,7 +113,7 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
         self.queries = queries
     }
 
-    init(proto: Biscuit_Format_Schema_Check, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Check, interner: InternmentTable) throws {
         self.queries = try proto.queries.map { try Biscuit.Query(proto: $0, interner: interner) }
         if proto.hasKind {
             self._kind =
@@ -132,18 +132,12 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
     }
 
     func intern(
-        _ interner: inout BlockInternmentTable,
+        _ interner: inout InternmentTable,
         _ symbols: inout [String],
         _ publicKeys: inout [Biscuit.ThirdPartyKey]
-    ) {
-        for query in self.queries {
-            query.intern(&interner, &symbols, &publicKeys)
-        }
-    }
-
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Check {
+    ) -> Biscuit_Format_Schema_Check {
         var proto = Biscuit_Format_Schema_Check()
-        proto.queries = self.queries.map { $0.proto(interner) }
+        proto.queries = self.queries.map { $0.intern(&interner, &symbols, &publicKeys) }
         if let kind = self._kind {
             proto.kind =
                 switch kind.wrapped {

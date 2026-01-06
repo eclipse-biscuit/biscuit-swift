@@ -45,7 +45,7 @@ public struct Fact: Sendable, Hashable, CustomStringConvertible {
         self.values = [index.value, revocationID.value]
     }
 
-    init(proto: Biscuit_Format_Schema_Predicate, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Predicate, interner: InternmentTable) throws {
         guard proto.hasName else {
             throw Biscuit.ValidationError.missingPredicate
         }
@@ -53,17 +53,11 @@ public struct Fact: Sendable, Hashable, CustomStringConvertible {
         self.values = try proto.terms.map { try Value(proto: $0, interner: interner) }
     }
 
-    func intern(_ interner: inout BlockInternmentTable, _ locals: inout [String]) {
-        interner.intern(self.name, &locals)
-        for values in self.values {
-            values.intern(&interner, &locals)
-        }
-    }
-
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Predicate {
-        var proto = Biscuit_Format_Schema_Predicate()
-        proto.name = UInt64(interner.symbolIndex(for: self.name))
-        proto.terms = self.values.map { $0.proto(interner) }
+    func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_Fact {
+        var proto = Biscuit_Format_Schema_Fact()
+        proto.predicate = Biscuit_Format_Schema_Predicate()
+        proto.predicate.name = UInt64(interner.intern(self.name, &locals))
+        proto.predicate.terms = self.values.map { $0.intern(&interner, &locals) }
         return proto
     }
 

@@ -17,7 +17,7 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
         self.ops = body.expression.ops
     }
 
-    init(proto: Biscuit_Format_Schema_OpClosure, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_OpClosure, interner: InternmentTable) throws {
         self.params = try proto.params.map { try interner.lookupSymbol(Int($0)) }
         self.ops = try proto.ops.map { try Op(proto: $0, interner: interner) }
     }
@@ -90,19 +90,10 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
         }
     }
 
-    func intern(_ interner: inout BlockInternmentTable, _ locals: inout [String]) {
-        for param in self.params {
-            interner.intern(param, &locals)
-        }
-        for op in self.ops {
-            op.intern(&interner, &locals)
-        }
-    }
-
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_OpClosure {
+    func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_OpClosure {
         var proto = Biscuit_Format_Schema_OpClosure()
-        proto.params = self.params.map { UInt32(interner.symbolIndex(for: $0)) }
-        proto.ops = self.ops.map { $0.proto(interner) }
+        proto.params = self.params.map { UInt32(interner.intern($0, &locals)) }
+        proto.ops = self.ops.map { $0.intern(&interner, &locals) }
         return proto
     }
 

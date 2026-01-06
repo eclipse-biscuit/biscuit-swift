@@ -10,7 +10,7 @@ import Foundation
 
 /// A Biscuit authorization token
 public struct Biscuit: Sendable, Hashable {
-    let interner: InternmentTables
+    let interner: InternmentTable
     let proof: Proof
 
     /// The ID of the key used to sign the authority block of this Biscuit, if one is specified
@@ -37,11 +37,10 @@ public struct Biscuit: Sendable, Hashable {
         @DatalogBlock using datalog: () throws -> DatalogBlock
     ) throws {
         try self.init(
-            authorityBlock: datalog(),
+            authorityBlock: DatalogBlock(context: context, datalog),
             rootKey: rootKey,
             rootKeyID: rootKeyID,
             algorithm: algorithm,
-            context: context
         )
     }
 
@@ -63,11 +62,10 @@ public struct Biscuit: Sendable, Hashable {
         context: String? = nil
     ) throws {
         try self.init(
-            authorityBlock: DatalogBlock(datalog),
+            authorityBlock: DatalogBlock(datalog, context: context),
             rootKey: rootKey,
             rootKeyID: rootKeyID,
             algorithm: algorithm,
-            context: context
         )
     }
 
@@ -78,25 +76,21 @@ public struct Biscuit: Sendable, Hashable {
     ///   - rootKey: the key that will sign the authority block
     ///   - rootKeyID: the identifier of the rootKey
     ///   - algorithm: which signing algorithm to use to seal or attenuate this Biscuit
-    ///   - context: context information which can be carried with this Biscuit
     /// - Throws: Signing may throw an error
     public init<Key: PrivateKey>(
         authorityBlock: DatalogBlock,
         rootKey: Key,
         rootKeyID: RootKeyID? = nil,
         algorithm: SigningAlgorithm = .ed25519,
-        context: String? = nil
     ) throws {
-        var interner = InternmentTables()
-        var authority = authorityBlock
-        authority.attachToBiscuit(interner: &interner.primary, context: context)
+        var interner = InternmentTable()
         let nextKey = InternalPrivateKey(algorithm: algorithm)
         self.rootKeyID = rootKeyID
         self.authority = try Block(
-            datalog: authority,
+            datalog: authorityBlock,
             nextKey: nextKey.publicKey,
             key: rootKey,
-            interner: interner.primary
+            interner: &interner
         )
         self.interner = interner
         self.attenuations = []
@@ -137,24 +131,19 @@ public struct Biscuit: Sendable, Hashable {
         guard let rootKey = getRootKey(self.rootKeyID) else {
             throw ValidationError.unknownRootKey
         }
-        var interner = InternmentTables()
-        self.authority = try Block(
+        var interner = InternmentTable()
+        self.authority = try Block.authority(
             proto: proto.authority,
             key: rootKey,
             interner: &interner
         )
         var lastBlock = self.authority
-        self.attenuations = try proto.blocks.enumerated().map {
-            lastBlock = try Block(
-                proto: $1,
-                lastBlock: lastBlock,
-                blockID: $0 + 1,
-                interner: &interner
-            )
+        self.attenuations = try proto.blocks.map {
+            lastBlock = try Block.attenuation(proto: $0, lastBlock: lastBlock, interner: &interner)
             return lastBlock
         }
         self.proof = try Proof(proto: proto.proof, algorithm: lastBlock.nextKey.algorithm)
-        try self.proof.isValidProof(for: lastBlock, interner: interner.blockTable(for: self.attenuations.count))
+        try self.proof.isValidProof(for: lastBlock)
         self.interner = interner
     }
 
@@ -192,7 +181,7 @@ public struct Biscuit: Sendable, Hashable {
         try self.init(serializedData: data, getRootKey: getRootKey)
     }
 
-    init(_ parent: Biscuit, _ attenuations: [Block], _ interner: InternmentTables, _ proof: Proof) {
+    init(_ parent: Biscuit, _ attenuations: [Block], _ interner: InternmentTable, _ proof: Proof) {
         self.interner = interner
         self.rootKeyID = parent.rootKeyID
         self.authority = parent.authority
@@ -223,7 +212,7 @@ public struct Biscuit: Sendable, Hashable {
         context: String? = nil,
         @DatalogBlock using datalog: () throws -> DatalogBlock
     ) throws -> Biscuit {
-        try self.attenuated(using: datalog(), algorithm: algorithm, context: context)
+        try self.attenuated(using: DatalogBlock(context: context, datalog), algorithm: algorithm)
     }
 
     /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
@@ -244,10 +233,9 @@ public struct Biscuit: Sendable, Hashable {
         @DatalogBlock using datalog: () throws -> DatalogBlock
     ) throws -> Biscuit {
         try self.attenuated(
-            using: datalog(),
+            using: DatalogBlock(context: context, datalog),
             thirdPartyKey: thirdPartyKey,
             algorithm: algorithm,
-            context: context
         )
     }
 
@@ -267,9 +255,8 @@ public struct Biscuit: Sendable, Hashable {
         context: String? = nil
     ) throws -> Biscuit {
         try self.attenuated(
-            using: DatalogBlock(datalog),
+            using: DatalogBlock(datalog, context: context),
             algorithm: algorithm,
-            context: context
         )
     }
 
@@ -291,10 +278,9 @@ public struct Biscuit: Sendable, Hashable {
         context: String? = nil
     ) throws -> Biscuit {
         try self.attenuated(
-            using: DatalogBlock(datalog),
+            using: DatalogBlock(datalog, context: context),
             thirdPartyKey: thirdPartyKey,
             algorithm: algorithm,
-            context: context
         )
     }
 
@@ -304,32 +290,26 @@ public struct Biscuit: Sendable, Hashable {
     /// - Parameters:
     ///   - datalog: the datalog contents of the attenuation, as a String
     ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
-    ///   - context: context information which can be carried with the attenuation
     /// - Returns: the attenuated Biscuit
     /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed or a `DatalogError` if
     /// the datalog string cannot be parsed, and signing may throw an error
     public func attenuated(
         using datalog: DatalogBlock,
         algorithm: SigningAlgorithm = .ed25519,
-        context: String? = nil
     ) throws -> Biscuit {
         guard case .nextSecret(let lastKey) = self.proof else {
             throw AttenuationError.cannotAttenuateSealedToken
         }
         var interner = self.interner
-        var attenuation = datalog
-        attenuation.attachToBiscuit(interner: &interner.primary, context: context)
         let nextKey = InternalPrivateKey(algorithm: algorithm)
-        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
         var attenuations = self.attenuations
         try attenuations.append(
             Block(
-                datalog: attenuation,
+                datalog: datalog,
                 nextKey: nextKey.publicKey,
                 lastKey: lastKey,
-                lastSig: lastSig,
-                externalSignature: nil,
-                interner: interner.primary
+                lastSig: self.lastSig,
+                interner: &interner
             )
         )
         return Biscuit(self, attenuations, interner, .nextSecret(nextKey))
@@ -342,7 +322,6 @@ public struct Biscuit: Sendable, Hashable {
     ///   - datalog: the datalog contents of the attenuation
     ///   - thirdPartyKey: this key will be used to sign the attenuation
     ///   - algorithm: the algorithm that will be used to further attenuate the new Biscuit
-    ///   - context: context information which can be carried with the attenuation
     /// - Returns: the attenuated Biscuit
     /// - Throws: May throw an `AttenuationError` if the Biscuit is sealed and signing may throw an
     /// error
@@ -350,36 +329,22 @@ public struct Biscuit: Sendable, Hashable {
         using datalog: DatalogBlock,
         thirdPartyKey: Key,
         algorithm: SigningAlgorithm = .ed25519,
-        context: String? = nil
     ) throws -> Biscuit {
         guard case .nextSecret(let lastKey) = self.proof else {
             throw AttenuationError.cannotAttenuateSealedToken
         }
-        var blockInterner = BlockInternmentTable()
-        var attenuation = datalog
-        attenuation.attachToBiscuit(interner: &blockInterner, context: context)
         let nextKey = InternalPrivateKey(algorithm: algorithm)
-        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
         var attenuations = self.attenuations
-        let externalSignature = try Block.ExternalSignature(
-            block: attenuation,
-            lastSig: lastSig,
-            thirdPartyKey: thirdPartyKey,
-            interner: blockInterner
-        )
         try attenuations.append(
             Block(
-                datalog: attenuation,
+                datalog: datalog,
                 nextKey: nextKey.publicKey,
                 lastKey: lastKey,
-                lastSig: lastSig,
-                externalSignature: externalSignature,
-                interner: blockInterner
+                lastSig: self.lastSig,
+                thirdPartyKey: thirdPartyKey,
             )
         )
-        var interner = self.interner
-        interner.setBlockTable(blockInterner, for: attenuations.count)
-        return Biscuit(self, attenuations, interner, .nextSecret(nextKey))
+        return Biscuit(self, attenuations, self.interner, .nextSecret(nextKey))
     }
 
     /// Seal this Biscuit, producing a new Biscuit which cannot be attenuated further. This Biscuit
@@ -389,10 +354,7 @@ public struct Biscuit: Sendable, Hashable {
     /// - Throws: Signing may throw an error
     public func sealed() throws -> Biscuit {
         if case .nextSecret(let key) = self.proof {
-            let sig = try key.sealingSignature(
-                for: self.attenuations.last ?? self.authority,
-                interner: self.interner.blockTable(for: self.attenuations.count)
-            )
+            let sig = try key.sealingSignature(for: self.attenuations.last ?? self.authority)
             return Biscuit(self, self.attenuations, self.interner, .finalSignature(sig))
         } else {
             return self
@@ -446,14 +408,14 @@ public struct Biscuit: Sendable, Hashable {
     /// - Returns: the data representation of this Biscuit
     /// - Throws: May throw an error if protobuf serialization fails
     public func serializedData() throws -> Data {
-        try self.proto().serializedData()
+        try self.proto.serializedData()
     }
 
     /// Serialize this Biscuit to its base64url encoded representation
     /// - Returns: the base64url encoded representation of this Biscuit
     /// - Throws: May thow an error if protobuf serialization fails
     public func base64URLEncoded() throws -> String {
-        let base64Encoded = try self.proto().serializedData().base64EncodedString()
+        let base64Encoded = try self.serializedData().base64EncodedString()
         // Translate base64 into base64url, ignoring padding, as defined in RFC4648.
         return
             base64Encoded
@@ -464,15 +426,13 @@ public struct Biscuit: Sendable, Hashable {
     /// Whether or not this Biscuit has been sealed
     public var isSealed: Bool { self.proof.isSealed }
 
-    func proto() throws -> Biscuit_Format_Schema_Biscuit {
+    var proto: Biscuit_Format_Schema_Biscuit {
         var proto = Biscuit_Format_Schema_Biscuit()
         if let rootKeyID = self.rootKeyID {
             proto.rootKeyID = rootKeyID.rawValue
         }
-        proto.authority = try self.authority.proto(interner: self.interner.primary)
-        proto.blocks = try self.attenuations.enumerated().map {
-            try $1.proto(interner: self.interner.blockTable(for: $0 + 1))
-        }
+        proto.authority = self.authority.proto
+        proto.blocks = self.attenuations.map { $0.proto }
         proto.proof = self.proof.proto
         return proto
     }
@@ -551,5 +511,9 @@ public struct Biscuit: Sendable, Hashable {
         limitedBy: Authorizer.Limits = Authorizer.Limits.noLimits
     ) throws -> Bool {
         try self.query(using: Check(datalog), limitedBy: limitedBy)
+    }
+
+    var lastSig: Data {
+        self.attenuations.last?.signature ?? self.authority.signature
     }
 }

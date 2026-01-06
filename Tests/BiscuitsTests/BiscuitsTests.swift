@@ -9,17 +9,12 @@ import XCTest
 
 final class BiscuitsTests: XCTestCase {
     func testDatalogBlockWithFact() throws {
-        var interner = BlockInternmentTable()
-        var block = try Biscuit.DatalogBlock("foo(1234);")
-        block.attachToBiscuit(interner: &interner, context: nil)
-        XCTAssertEqual(block.version, 6)
+        let block = try Biscuit.DatalogBlock("foo(1234);")
         XCTAssertEqual(block.context, nil)
         XCTAssert(block.checks.isEmpty)
         XCTAssert(block.rules.isEmpty)
         XCTAssert(block.trusted.isEmpty)
-        XCTAssert(block.publicKeys.isEmpty)
 
-        XCTAssertEqual(block.symbols, ["foo"])
         XCTAssertEqual(block.facts.count, 1)
         let fact = block.facts[0]
         XCTAssertEqual(fact.name, "foo")
@@ -27,17 +22,12 @@ final class BiscuitsTests: XCTestCase {
     }
 
     func testDatalogBlockWithRule() throws {
-        var interner = BlockInternmentTable()
-        var block = try Biscuit.DatalogBlock("foo($bar) <- user($bar);")
-        block.attachToBiscuit(interner: &interner, context: nil)
-        XCTAssertEqual(block.version, 6)
+        let block = try Biscuit.DatalogBlock("foo($bar) <- user($bar);")
         XCTAssertEqual(block.context, nil)
         XCTAssert(block.facts.isEmpty)
         XCTAssert(block.checks.isEmpty)
         XCTAssert(block.trusted.isEmpty)
-        XCTAssert(block.publicKeys.isEmpty)
 
-        XCTAssertEqual(block.symbols, ["foo", "bar"])
         XCTAssertEqual(block.rules.count, 1)
         let rule = block.rules[0]
         XCTAssert(rule.expressions.isEmpty)
@@ -52,17 +42,12 @@ final class BiscuitsTests: XCTestCase {
     }
 
     func testDatalogBlockWithCheck() throws {
-        var interner = BlockInternmentTable()
-        var block = try Biscuit.DatalogBlock("check if foo(\"bar\", \"foo\");")
-        block.attachToBiscuit(interner: &interner, context: nil)
-        XCTAssertEqual(block.version, 6)
+        let block = try Biscuit.DatalogBlock("check if foo(\"bar\", \"foo\");")
         XCTAssertEqual(block.context, nil)
         XCTAssert(block.facts.isEmpty)
         XCTAssert(block.rules.isEmpty)
         XCTAssert(block.trusted.isEmpty)
-        XCTAssert(block.publicKeys.isEmpty)
 
-        XCTAssertEqual(block.symbols, ["foo", "bar"])
         XCTAssertEqual(block.checks.count, 1)
         let check = block.checks[0]
         XCTAssertEqual(check.kind, .checkIf)
@@ -77,16 +62,11 @@ final class BiscuitsTests: XCTestCase {
     }
 
     func testDatalogBlockWithMultipleFacts() throws {
-        var interner = BlockInternmentTable()
-        var block = try Biscuit.DatalogBlock("user(1234); admin(1234);")
-        block.attachToBiscuit(interner: &interner, context: nil)
-        XCTAssertEqual(block.version, 6)
+        let block = try Biscuit.DatalogBlock("user(1234); admin(1234);")
         XCTAssertEqual(block.context, nil)
         XCTAssert(block.checks.isEmpty)
         XCTAssert(block.rules.isEmpty)
         XCTAssert(block.trusted.isEmpty)
-        XCTAssert(block.publicKeys.isEmpty)
-        XCTAssert(block.symbols.isEmpty)
 
         XCTAssertEqual(block.facts.count, 2)
         let fact1 = block.facts[0]
@@ -98,17 +78,12 @@ final class BiscuitsTests: XCTestCase {
     }
 
     func testDatalogBlockWithExpression() throws {
-        var interner = BlockInternmentTable()
-        var block = try Biscuit.DatalogBlock("user($x) <- member($x, $team), $team == \"foo\";")
-        block.attachToBiscuit(interner: &interner, context: nil)
-        XCTAssertEqual(block.version, 6)
+        let block = try Biscuit.DatalogBlock("user($x) <- member($x, $team), $team == \"foo\";")
         XCTAssertEqual(block.context, nil)
         XCTAssert(block.facts.isEmpty)
         XCTAssert(block.checks.isEmpty)
         XCTAssert(block.trusted.isEmpty)
-        XCTAssert(block.publicKeys.isEmpty)
 
-        XCTAssertEqual(block.symbols, ["x", "foo"])
         XCTAssertEqual(block.rules.count, 1)
         let rule = block.rules[0]
         XCTAssert(rule.trusted.isEmpty)
@@ -128,15 +103,10 @@ final class BiscuitsTests: XCTestCase {
     }
 
     func testDatalogBlockWithScope() throws {
-        var interner = BlockInternmentTable()
-        var block = try Biscuit.DatalogBlock("trusting previous; check if user(1234);")
-        block.attachToBiscuit(interner: &interner, context: nil)
-        XCTAssertEqual(block.version, 6)
+        let block = try Biscuit.DatalogBlock("trusting previous; check if user(1234);")
         XCTAssertEqual(block.context, nil)
         XCTAssert(block.facts.isEmpty)
         XCTAssert(block.rules.isEmpty)
-        XCTAssert(block.publicKeys.isEmpty)
-        XCTAssert(block.symbols.isEmpty)
 
         XCTAssertEqual(block.trusted, [.previous])
         XCTAssertEqual(block.checks.count, 1)
@@ -153,16 +123,10 @@ final class BiscuitsTests: XCTestCase {
     }
 
     func testDatalogBlockWithRuleWithScope() throws {
-        var interner = BlockInternmentTable()
-        var block = try Biscuit.DatalogBlock("check if user(1234) trusting authority;")
-        block.attachToBiscuit(interner: &interner, context: nil)
-        XCTAssertEqual(block.version, 6)
+        let block = try Biscuit.DatalogBlock("check if user(1234) trusting authority;")
         XCTAssertEqual(block.context, nil)
         XCTAssert(block.facts.isEmpty)
         XCTAssert(block.rules.isEmpty)
-        XCTAssert(block.publicKeys.isEmpty)
-        XCTAssert(block.symbols.isEmpty)
-        XCTAssert(block.trusted.isEmpty)
 
         XCTAssertEqual(block.checks.count, 1)
         let check = block.checks[0]
@@ -178,22 +142,17 @@ final class BiscuitsTests: XCTestCase {
     }
 
     func testDatalogBlockWithEd25519Scope() throws {
-        var interner = BlockInternmentTable()
-        var block = try Biscuit.DatalogBlock(
+        let block = try Biscuit.DatalogBlock(
             """
                 trusting ed25519/0605d9692dd565fa8d70419081e032638fbc6dff5d96d14aeab49bc36a46d6a2;
                 check if user(1234);
             """
         )
-        block.attachToBiscuit(interner: &interner, context: nil)
-        XCTAssertEqual(block.version, 6)
         XCTAssertEqual(block.context, nil)
         XCTAssert(block.facts.isEmpty)
         XCTAssert(block.rules.isEmpty)
-        XCTAssert(block.symbols.isEmpty)
 
         XCTAssertEqual(block.trusted.count, 1)
-        XCTAssertEqual(block.publicKeys.count, 1)
         XCTAssertEqual(block.checks.count, 1)
         let check = block.checks[0]
         XCTAssertEqual(check.kind, .checkIf)
@@ -207,31 +166,24 @@ final class BiscuitsTests: XCTestCase {
     }
 
     func testBiscuitConstructionFromString() throws {
-        var interner = BlockInternmentTable()
         let key = P256.Signing.PrivateKey()
-        var block = try Biscuit.DatalogBlock("user(1234);")
-        block.attachToBiscuit(interner: &interner, context: nil)
+        let block = try Biscuit.DatalogBlock("user(1234);")
         let biscuit = try Biscuit(authorityBlock: "user(1234);", rootKey: key)
         XCTAssertEqual(biscuit.rootKeyID, nil)
         XCTAssert(biscuit.attenuations.isEmpty)
 
         let authority = biscuit.authority
         XCTAssertEqual(authority.nextKey.algorithm, .ed25519)
-        XCTAssertEqual(authority.datalog.version, block.version)
-        XCTAssertEqual(authority.datalog.symbols, block.symbols)
         XCTAssertEqual(authority.datalog.context, block.context)
         XCTAssertEqual(authority.datalog.checks, block.checks)
         XCTAssertEqual(authority.datalog.facts, block.facts)
         XCTAssertEqual(authority.datalog.rules, block.rules)
         XCTAssertEqual(authority.datalog.trusted, block.trusted)
-        XCTAssert(authority.datalog.publicKeys.isEmpty)
     }
 
     func testBiscuitConstructionFromDSL() throws {
-        var interner = BlockInternmentTable()
         let key = P256.Signing.PrivateKey()
-        var block = try Biscuit.DatalogBlock("user(1234);")
-        block.attachToBiscuit(interner: &interner, context: nil)
+        let block = try Biscuit.DatalogBlock("user(1234);")
         let biscuit = try Biscuit(rootKey: key) {
             Fact("user", 1234)
         }
@@ -240,45 +192,35 @@ final class BiscuitsTests: XCTestCase {
 
         let authority = biscuit.authority
         XCTAssertEqual(authority.nextKey.algorithm, .ed25519)
-        XCTAssertEqual(authority.datalog.version, block.version)
-        XCTAssertEqual(authority.datalog.symbols, block.symbols)
         XCTAssertEqual(authority.datalog.context, block.context)
         XCTAssertEqual(authority.datalog.checks, block.checks)
         XCTAssertEqual(authority.datalog.facts, block.facts)
         XCTAssertEqual(authority.datalog.rules, block.rules)
         XCTAssertEqual(authority.datalog.trusted, block.trusted)
-        XCTAssert(authority.datalog.publicKeys.isEmpty)
     }
 
     func testBiscuitAttenuationFromString() throws {
-        var interner = BlockInternmentTable()
         let key = P256.Signing.PrivateKey()
         let biscuit = try Biscuit(authorityBlock: "user(1234);", rootKey: key)
-        var attenuation = try Biscuit.DatalogBlock("check if read(\"/foo\");")
-        attenuation.attachToBiscuit(interner: &interner, context: nil)
+        let attenuation = try Biscuit.DatalogBlock("check if read(\"/foo\");")
         let attenuated = try biscuit.attenuated(using: "check if read(\"/foo\");", algorithm: .secp256r1)
         XCTAssertEqual(attenuated.attenuations.count, 1)
 
         let attenuation_block = attenuated.attenuations[0]
         XCTAssertEqual(attenuation_block.nextKey.algorithm, .secp256r1)
-        XCTAssertEqual(attenuation_block.datalog.version, attenuation.version)
-        XCTAssertEqual(attenuation_block.datalog.symbols, attenuation.symbols)
         XCTAssertEqual(attenuation_block.datalog.context, attenuation.context)
         XCTAssertEqual(attenuation_block.datalog.checks, attenuation.checks)
         XCTAssertEqual(attenuation_block.datalog.facts, attenuation.facts)
         XCTAssertEqual(attenuation_block.datalog.rules, attenuation.rules)
         XCTAssertEqual(attenuation_block.datalog.trusted, attenuation.trusted)
-        XCTAssert(attenuation_block.datalog.publicKeys.isEmpty)
     }
 
     func testBiscuitAttenuationFromDSL() throws {
-        var interner = BlockInternmentTable()
         let key = P256.Signing.PrivateKey()
         let biscuit = try Biscuit(rootKey: key) {
             Fact("user", 1234)
         }
-        var attenuation = try Biscuit.DatalogBlock("check if read(\"/foo\");")
-        attenuation.attachToBiscuit(interner: &interner, context: nil)
+        let attenuation = try Biscuit.DatalogBlock("check if read(\"/foo\");")
         let attenuated = try biscuit.attenuated(algorithm: .secp256r1) {
             Check.checkIf { Predicate("read", "/foo") }
         }
@@ -286,14 +228,11 @@ final class BiscuitsTests: XCTestCase {
 
         let attenuation_block = attenuated.attenuations[0]
         XCTAssertEqual(attenuation_block.nextKey.algorithm, .secp256r1)
-        XCTAssertEqual(attenuation_block.datalog.version, attenuation.version)
-        XCTAssertEqual(attenuation_block.datalog.symbols, attenuation.symbols)
         XCTAssertEqual(attenuation_block.datalog.context, attenuation.context)
         XCTAssertEqual(attenuation_block.datalog.checks, attenuation.checks)
         XCTAssertEqual(attenuation_block.datalog.facts, attenuation.facts)
         XCTAssertEqual(attenuation_block.datalog.rules, attenuation.rules)
         XCTAssertEqual(attenuation_block.datalog.trusted, attenuation.trusted)
-        XCTAssert(attenuation_block.datalog.publicKeys.isEmpty)
     }
 
     func testThirdPartySymbolTables() throws {

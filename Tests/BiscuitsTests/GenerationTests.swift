@@ -39,22 +39,18 @@ final class GenerationTests: XCTestCase {
         compareBlocks(expected.authority.datalog, biscuit.authority.datalog)
         XCTAssertEqual(expected.attenuations.count, biscuit.attenuations.count)
         var previous = biscuit.authority
-        for (idx, (expected, block)) in zip(expected.attenuations, biscuit.attenuations).enumerated() {
+        for (expected, block) in zip(expected.attenuations, biscuit.attenuations) {
             XCTAssertEqual(expected.signedByThirdParty, block.signedByThirdParty)
             compareBlocks(expected.datalog, block.datalog)
 
-            let interner = biscuit.interner.blockTable(for: idx + 1)
-            let signatureInput = try block.signatureInput(interner: interner, lastSig: previous.signature)
+            let signatureInput = block.signatureInput(lastSig: previous.signature)
             XCTAssert(previous.nextKey.isValidSignature(block.signature, for: signatureInput))
             if let externalSignature = block.externalSignature {
-                try externalSignature.isValidSignature(for: block, lastSig: previous.signature, interner: interner)
+                try externalSignature.isValidSignature(for: block, lastSig: previous.signature)
             }
             previous = block
         }
-        try biscuit.proof.isValidProof(
-            for: previous,
-            interner: biscuit.interner.blockTable(for: biscuit.attenuations.count)
-        )
+        try biscuit.proof.isValidProof(for: previous)
 
         let serialized = try biscuit.serializedData()
         let deserialized = try Biscuit(serializedData: serialized, rootKey: rootPublicKey)
@@ -62,8 +58,6 @@ final class GenerationTests: XCTestCase {
     }
 
     func compareBlocks(_ lhs: Biscuit.DatalogBlock, _ rhs: Biscuit.DatalogBlock) {
-        XCTAssertEqual(lhs.symbols, rhs.symbols)
-        XCTAssertEqual(lhs.publicKeys, rhs.publicKeys)
         XCTAssertEqual(lhs.trusted, rhs.trusted)
         XCTAssertEqual(lhs.context, rhs.context)
         XCTAssertEqual(lhs.facts, rhs.facts)

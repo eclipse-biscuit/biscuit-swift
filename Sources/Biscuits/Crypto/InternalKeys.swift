@@ -38,8 +38,8 @@ extension Biscuit {
             }
         }
 
-        func sealingSignature(for block: Block, interner: BlockInternmentTable) throws -> Data {
-            try self.signature(for: block.sealingSignatureInput(interner: interner))
+        func sealingSignature(for block: Block) throws -> Data {
+            try self.signature(for: block.sealingSignatureInput())
         }
 
         static func == (lhs: InternalPrivateKey, rhs: InternalPrivateKey) -> Bool {
@@ -124,14 +124,14 @@ extension Biscuit {
             }
         }
 
-        func isValidSignature(for block: Block, interner: BlockInternmentTable) throws {
-            guard try self.isValidSignature(block.signature, for: block.signatureInput(interner: interner)) else {
+        func isValidSignature(for block: Block) throws {
+            guard self.isValidSignature(block.signature, for: block.signatureInput()) else {
                 throw ValidationError.invalidSignature
             }
         }
 
-        func isValidSealingSignature(_ signature: Data, for block: Block, interner: BlockInternmentTable) throws {
-            guard try self.isValidSignature(signature, for: block.sealingSignatureInput(interner: interner)) else {
+        func isValidSealingSignature(_ signature: Data, for block: Block) throws {
+            guard self.isValidSignature(signature, for: block.sealingSignatureInput()) else {
                 throw ValidationError.invalidSealingSignature
             }
         }
