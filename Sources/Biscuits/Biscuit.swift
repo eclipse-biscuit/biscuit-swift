@@ -308,7 +308,7 @@ public struct Biscuit: Sendable, Hashable {
                 datalog: datalog,
                 nextKey: nextKey.publicKey,
                 lastKey: lastKey,
-                lastSig: self.lastSig,
+                lastSig: self.lastBlock.signature,
                 interner: &interner
             )
         )
@@ -340,7 +340,7 @@ public struct Biscuit: Sendable, Hashable {
                 datalog: datalog,
                 nextKey: nextKey.publicKey,
                 lastKey: lastKey,
-                lastSig: self.lastSig,
+                lastSig: self.lastBlock.signature,
                 thirdPartyKey: thirdPartyKey,
             )
         )
@@ -354,7 +354,7 @@ public struct Biscuit: Sendable, Hashable {
     /// - Throws: Signing may throw an error
     public func sealed() throws -> Biscuit {
         if case .nextSecret(let key) = self.proof {
-            let sig = try key.sealingSignature(for: self.attenuations.last ?? self.authority)
+            let sig = try key.sealingSignature(for: self.lastBlock)
             return Biscuit(self, self.attenuations, self.interner, .finalSignature(sig))
         } else {
             return self
@@ -513,7 +513,7 @@ public struct Biscuit: Sendable, Hashable {
         try self.query(using: Check(datalog), limitedBy: limitedBy)
     }
 
-    var lastSig: Data {
-        self.attenuations.last?.signature ?? self.authority.signature
+    var lastBlock: Block {
+        self.attenuations.last ?? self.authority
     }
 }

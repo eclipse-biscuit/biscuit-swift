@@ -11,7 +11,7 @@ import Foundation
 extension Biscuit {
     /// Generates a request for a third party to attenuate this token
     public func generateThirdPartyBlockRequest() -> ThirdPartyBlockRequest {
-        ThirdPartyBlockRequest(previousSignature: self.lastSig)
+        ThirdPartyBlockRequest(previousSignature: self.lastBlock.signature)
     }
 
     /// Attenuate a token with a `ThirdPartyBlockContents`
@@ -31,11 +31,11 @@ extension Biscuit {
             contents: contents,
             nextKey: nextKey.publicKey,
             lastKey: lastKey,
-            lastSig: self.lastSig
+            lastSig: self.lastBlock.signature
         )
         try contents.externalSignature.isValidSignature(
             for: attenuation,
-            lastSig: self.lastSig,
+            lastSig: self.lastBlock.signature,
         )
         let attenuations = self.attenuations + [attenuation]
         return Biscuit(self, attenuations, self.interner, .nextSecret(nextKey))
