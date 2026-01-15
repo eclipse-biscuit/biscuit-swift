@@ -20,7 +20,7 @@ enum OpBinary: Sendable, Hashable {
     case ffi(String)
     case tryOr
 
-    init(proto: Biscuit_Format_Schema_OpBinary, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_OpBinary, interner: InternmentTable) throws {
         guard proto.hasKind else {
             throw Biscuit.ValidationError.missingOp
         }
@@ -84,7 +84,7 @@ enum OpBinary: Sendable, Hashable {
         }
     }
 
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_OpBinary {
+    func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_OpBinary {
         var proto = Biscuit_Format_Schema_OpBinary()
         switch self {
         case .lt: proto.kind = .lessThan
@@ -115,8 +115,8 @@ enum OpBinary: Sendable, Hashable {
         case .any: proto.kind = .any
         case .all: proto.kind = .all
         case .get: proto.kind = .get
-        case .ffi(let s):
-            proto.ffiName = UInt64(interner.symbolIndex(for: s))
+        case .ffi(let name):
+            proto.ffiName = UInt64(interner.intern(name, &locals))
             proto.kind = .ffi
         case .tryOr: proto.kind = .tryOr
         }

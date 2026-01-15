@@ -28,7 +28,7 @@ public struct Term: TermConvertible, ExpressionConvertible, Sendable, Hashable, 
         self.wrapped = .value(value.value)
     }
 
-    init(proto: Biscuit_Format_Schema_Term, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Term, interner: InternmentTable) throws {
         self.wrapped =
             switch proto.content {
             case .variable(let v): try .variable(interner.lookupSymbol(Int(v)))
@@ -36,11 +36,13 @@ public struct Term: TermConvertible, ExpressionConvertible, Sendable, Hashable, 
             }
     }
 
-    func intern(_ interner: inout BlockInternmentTable, _ locals: inout [String]) {
+    func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_Term {
+        var proto = Biscuit_Format_Schema_Term()
         switch self.wrapped {
-        case .variable(let name): interner.intern(name, &locals)
-        case .value(let term): term.intern(&interner, &locals)
+        case .variable(let name): proto.variable = UInt32(interner.intern(name, &locals))
+        case .value(let term): return term.intern(&interner, &locals)
         }
+        return proto
     }
 
     func makeConcrete(variables: [String: Value]) throws -> Value {
@@ -52,15 +54,6 @@ public struct Term: TermConvertible, ExpressionConvertible, Sendable, Hashable, 
             return term
         case .value(let term): return term
         }
-    }
-
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Term {
-        var proto = Biscuit_Format_Schema_Term()
-        switch self.wrapped {
-        case .variable(let v): proto.variable = UInt32(interner.symbolIndex(for: v))
-        case .value(let term): return term.proto(interner)
-        }
-        return proto
     }
 
     var isConcrete: Bool {

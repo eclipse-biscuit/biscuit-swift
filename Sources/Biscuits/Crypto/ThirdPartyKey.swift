@@ -64,9 +64,8 @@ extension Biscuit {
             _ signature: Data,
             for block: Block,
             lastSig: Data,
-            interner: BlockInternmentTable
         ) throws {
-            let input = try SignatureV1.externalSignatureInput(block: block.datalog, sig: lastSig, interner: interner)
+            let input = SignatureV1.externalSignatureInput(block: block.serializedDatalog, sig: lastSig)
             switch self.algorithm.wrapped {
             case .ed25519:
                 let key = try Curve25519.Signing.PublicKey(rawRepresentation: self.dataRepresentation)

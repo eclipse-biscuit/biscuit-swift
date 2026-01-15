@@ -30,7 +30,7 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
         self.wrapped = try .publicKey(Biscuit.ThirdPartyKey(algorithm: algorithm, hexString: hexString))
     }
 
-    init(proto: Biscuit_Format_Schema_Scope, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Scope, interner: InternmentTable) throws {
         self.wrapped =
             switch proto.content {
             case .scopeType(.authority): .authority
@@ -44,18 +44,18 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
         TrustedScope(.publicKey(Biscuit.ThirdPartyKey(key: key)))
     }
 
-    func intern(_ interner: inout BlockInternmentTable, _ keys: inout [Biscuit.ThirdPartyKey]) {
-        if case .publicKey(let key) = self.wrapped {
-            interner.intern(key, &keys)
-        }
-    }
-
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Scope {
+    func intern(
+        _ interner: inout InternmentTable,
+        _ keys: inout [Biscuit.ThirdPartyKey]
+    )
+        -> Biscuit_Format_Schema_Scope
+    {
         var proto = Biscuit_Format_Schema_Scope()
         switch self.wrapped {
         case .authority: proto.scopeType = .authority
         case .previous: proto.scopeType = .previous
-        case .publicKey(let key): proto.publicKey = Int64(interner.publicKeyIndex(for: key))
+        case .publicKey(let key):
+            proto.publicKey = Int64(interner.intern(key, &keys))
         }
         return proto
     }

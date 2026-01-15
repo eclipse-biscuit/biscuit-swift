@@ -18,7 +18,7 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
     }
     let wrapped: Wrapped
 
-    init(proto: Biscuit_Format_Schema_MapKey, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_MapKey, interner: InternmentTable) throws {
         self.wrapped =
             switch proto.content {
             case .integer(let i): .integer(i)
@@ -41,26 +41,10 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
         self.wrapped = wrapped
     }
 
-    // Intentionally not public and MapKey does not conform to Comparable
-    static func < (lhs: MapKey, rhs: MapKey) -> Bool {
-        switch (lhs.wrapped, rhs.wrapped) {
-        case (.integer(let l), .integer(let r)): return l < r
-        case (.string(let l), .string(let r)): return l < r
-        case (.integer, .string): return true
-        case (.string, .integer): return false
-        }
-    }
-
-    func intern(_ interner: inout BlockInternmentTable, _ locals: inout [String]) {
-        if case .string(let s) = self.wrapped {
-            interner.intern(s, &locals)
-        }
-    }
-
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_MapKey {
+    func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_MapKey {
         var proto = Biscuit_Format_Schema_MapKey()
         switch self.wrapped {
-        case .string(let s): proto.string = UInt64(interner.symbolIndex(for: s))
+        case .string(let s): proto.string = UInt64(interner.intern(s, &locals))
         case .integer(let i): proto.integer = Int64(i)
         }
         return proto
@@ -79,26 +63,6 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
         switch self.wrapped {
         case .integer(let i): Value(.integer(i))
         case .string(let s): Value(s)
-        }
-    }
-}
-
-extension Biscuit_Format_Schema_MapEntry: Comparable {
-    static func < (lhs: Biscuit_Format_Schema_MapEntry, rhs: Biscuit_Format_Schema_MapEntry) -> Bool {
-        lhs.key < rhs.key || (lhs.key == rhs.key && lhs.value < rhs.value)
-    }
-}
-
-extension Biscuit_Format_Schema_MapKey: Comparable {
-    static func < (lhs: Biscuit_Format_Schema_MapKey, rhs: Biscuit_Format_Schema_MapKey) -> Bool {
-        switch (lhs.content, rhs.content) {
-        case (.integer(let l), .integer(let r)): return l < r
-        case (.string(let l), .string(let r)): return l < r
-        case (.none, .none): return true
-        case (.integer, .string): return true
-        case (.string, .integer): return false
-        case (.none, _): return true
-        case (_, .none): return false
         }
     }
 }

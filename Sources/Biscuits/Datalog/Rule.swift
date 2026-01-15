@@ -49,7 +49,7 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
         self = parser.rules[0]
     }
 
-    init(proto: Biscuit_Format_Schema_Rule, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Rule, interner: InternmentTable) throws {
         guard proto.hasHead else {
             throw Biscuit.ValidationError.missingRuleHead
         }
@@ -72,28 +72,15 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
     }
 
     func intern(
-        _ interner: inout BlockInternmentTable,
+        _ interner: inout InternmentTable,
         _ symbols: inout [String],
         _ publicKeys: inout [Biscuit.ThirdPartyKey]
-    ) {
-        self.head.intern(&interner, &symbols)
-        for fact in self.bodyPredicates {
-            fact.intern(&interner, &symbols)
-        }
-        for expression in self.expressions {
-            expression.intern(&interner, &symbols)
-        }
-        for scope in self.trusted {
-            scope.intern(&interner, &publicKeys)
-        }
-    }
-
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Rule {
+    ) -> Biscuit_Format_Schema_Rule {
         var proto = Biscuit_Format_Schema_Rule()
-        proto.head = self.head.proto(interner)
-        proto.body = self.bodyPredicates.map { $0.proto(interner) }
-        proto.expressions = self.expressions.map { $0.proto(interner) }
-        proto.scope = self.trusted.map { $0.proto(interner) }
+        proto.head = self.head.intern(&interner, &symbols)
+        proto.body = self.bodyPredicates.map { $0.intern(&interner, &symbols) }
+        proto.expressions = self.expressions.map { $0.intern(&interner, &symbols) }
+        proto.scope = self.trusted.map { $0.intern(&interner, &publicKeys) }
         return proto
     }
 

@@ -21,33 +21,43 @@ struct SignatureV1 {
     fileprivate static let ed25519: Data = Data("\0ALGORITHM\0\0\0\0\0".utf8)
     fileprivate static let secp256r1: Data = Data("\0ALGORITHM\0\u{1}\0\0\0".utf8)
 
-    static func externalSignatureInput(
-        block: Biscuit.DatalogBlock,
-        sig: Data,
-        interner: BlockInternmentTable
-    ) throws -> Data {
+    static func externalSignatureInput(block: Data, sig: Data) -> Data {
         var data = SignatureV1.external
         data.append(contentsOf: SignatureV1.version1)
         data.append(contentsOf: SignatureV1.payload)
-        try data.append(contentsOf: block.serializedData(interner))
+        data.append(contentsOf: block)
         data.append(contentsOf: SignatureV1.prevsig)
         data.append(contentsOf: sig)
         return data
     }
 
-    static func blockSignatureInput(block: Biscuit.Block, sig: Data?, interner: BlockInternmentTable) throws -> Data {
+    static func blockSignatureInput(block: Biscuit.Block, sig: Data?) -> Data {
+        Self.blockSignatureInput(
+            payload: block.serializedDatalog,
+            nextKey: block.nextKey,
+            prevSig: sig,
+            externalSig: block.externalSignature?.signature
+        )
+    }
+
+    static func blockSignatureInput(
+        payload: Data,
+        nextKey: Biscuit.InternalPublicKey,
+        prevSig: Data?,
+        externalSig: Data?
+    ) -> Data {
         var data = SignatureV1.block
         data.append(contentsOf: SignatureV1.version1)
         data.append(contentsOf: SignatureV1.payload)
-        try data.append(contentsOf: block.datalog.serializedData(interner))
-        data.append(contentsOf: SignatureV1.algorithm(for: block.nextKey.algorithm))
+        data.append(contentsOf: payload)
+        data.append(contentsOf: SignatureV1.algorithm(for: nextKey.algorithm))
         data.append(contentsOf: SignatureV1.nextkey)
-        data.append(contentsOf: block.nextKey.dataRepresentation)
-        if let sig = sig {
+        data.append(contentsOf: nextKey.dataRepresentation)
+        if let sig = prevSig {
             data.append(contentsOf: SignatureV1.prevsig)
             data.append(contentsOf: sig)
         }
-        if let sig = block.externalSignature?.signature {
+        if let sig = externalSig {
             data.append(contentsOf: SignatureV1.externalsig)
             data.append(contentsOf: sig)
         }
@@ -63,8 +73,8 @@ struct SignatureV1 {
 }
 
 struct SignatureV0 {
-    static func blockSignatureInput(block: Biscuit.Block, interner: BlockInternmentTable) throws -> Data {
-        var data = try block.datalog.serializedData(interner)
+    static func blockSignatureInput(block: Biscuit.Block) -> Data {
+        var data = block.serializedDatalog
         if let externalSignature = block.externalSignature {
             data.append(contentsOf: externalSignature.signature)
         }
@@ -73,8 +83,8 @@ struct SignatureV0 {
         return data
     }
 
-    static func sealingSignatureInput(block: Biscuit.Block, interner: BlockInternmentTable) throws -> Data {
-        var data = try block.datalog.serializedData(interner)
+    static func sealingSignatureInput(block: Biscuit.Block) -> Data {
+        var data = block.serializedDatalog
         data.append(contentsOf: algorithm(for: block.nextKey.algorithm))
         data.append(contentsOf: block.nextKey.dataRepresentation)
         data.append(contentsOf: block.signature)

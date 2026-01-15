@@ -1,3 +1,12 @@
+# `2.0.0`
+
+- Fix platform minimum versions being too low for iOS, tvOS, and watchOS
+- Declare support for visionOS
+- Declare support for SwiftCrypto version 4.0.0
+- Fix potential issue with non-canonical Datalog serialization
+- Fix `UnverifiedBiscuit` verification method not verifying final proof
+- Remove context argument from APIs that would let user set context in conflicting ways
+
 # `1.1.1`
 
 - Fix `secp256r1` signatures (#15)

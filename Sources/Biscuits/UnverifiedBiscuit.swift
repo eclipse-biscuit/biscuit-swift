@@ -10,7 +10,7 @@ import Foundation
 
 /// An UnverifiedBiscuit is a biscuit which has not been cryptographically verified.
 public struct UnverifiedBiscuit: Sendable, Hashable {
-    let interner: InternmentTables
+    let interner: InternmentTable
     let proof: Biscuit.Proof
 
     /// The ID of the key used to sign the authority block of this Biscuit, if one is specified
@@ -37,15 +37,15 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         } else {
             self.rootKeyID = nil
         }
-        var interner = InternmentTables()
-        self.authority = try Biscuit.Block(proto: proto.authority, interner: &interner)
+        var interner = InternmentTable()
+        self.authority = try Biscuit.Block.unverifiedAuthority(proto: proto.authority, interner: &interner)
         var lastBlock = self.authority
-        self.attenuations = try proto.blocks.enumerated().map {
-            lastBlock = try Biscuit.Block(proto: $1, blockID: $0 + 1, interner: &interner)
+        self.attenuations = try proto.blocks.map {
+            lastBlock = try Biscuit.Block.unverifiedAttenuation(proto: $0, interner: &interner)
             return lastBlock
         }
-        self.proof = try Biscuit.Proof(proto: proto.proof, algorithm: lastBlock.nextKey.algorithm)
         self.interner = interner
+        self.proof = try Biscuit.Proof(proto: proto.proof, algorithm: lastBlock.nextKey.algorithm)
     }
 
     /// Deserializes an UnverifiedBiscuit from its base64url representation without
@@ -72,7 +72,7 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     init(
         _ parent: UnverifiedBiscuit,
         _ attenuations: [Biscuit.Block],
-        _ interner: InternmentTables,
+        _ interner: InternmentTable,
         _ proof: Biscuit.Proof
     ) {
         self.interner = interner
@@ -88,14 +88,13 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     /// - Parameters using: the key used to verify this biscuit
     /// - Throw: A ValidationError is thrown if any signature is invalid
     public func verify<Key: Biscuit.PublicKey>(using key: Key) throws -> Biscuit {
-        let signatureInput = try self.authority.signatureInput(interner: interner.primary)
+        let signatureInput = self.authority.signatureInput()
         guard key.isValidSignature(self.authority.signature, for: signatureInput) else {
             throw Biscuit.ValidationError.invalidSignature
         }
         var lastBlock = self.authority
-        for (blockID, block) in self.attenuations.enumerated() {
-            let blockInterner = interner.blockTable(for: blockID + 1)
-            let signatureInput = try block.signatureInput(interner: blockInterner, lastSig: lastBlock.signature)
+        for block in self.attenuations {
+            let signatureInput = block.signatureInput(lastSig: lastBlock.signature)
             guard lastBlock.nextKey.isValidSignature(block.signature, for: signatureInput) else {
                 throw Biscuit.ValidationError.invalidSignature
             }
@@ -103,11 +102,11 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
                 try externalSignature.isValidSignature(
                     for: block,
                     lastSig: lastBlock.signature,
-                    interner: blockInterner
                 )
             }
             lastBlock = block
         }
+        try self.proof.isValidProof(for: lastBlock)
         return Biscuit(unverifiedBiscuit: self)
     }
 
@@ -126,7 +125,7 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         context: String? = nil,
         @Biscuit.DatalogBlock using datalog: () throws -> Biscuit.DatalogBlock
     ) throws -> UnverifiedBiscuit {
-        try self.attenuated(using: datalog(), algorithm: algorithm, context: context)
+        try self.attenuated(using: Biscuit.DatalogBlock(context: context, datalog), algorithm: algorithm)
     }
 
     /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
@@ -147,10 +146,9 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         @Biscuit.DatalogBlock using datalog: () throws -> Biscuit.DatalogBlock
     ) throws -> UnverifiedBiscuit {
         try self.attenuated(
-            using: datalog(),
+            using: Biscuit.DatalogBlock(context: context, datalog),
             thirdPartyKey: thirdPartyKey,
             algorithm: algorithm,
-            context: context
         )
     }
 
@@ -170,9 +168,8 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         context: String? = nil
     ) throws -> UnverifiedBiscuit {
         try self.attenuated(
-            using: Biscuit.DatalogBlock(datalog),
+            using: Biscuit.DatalogBlock(datalog, context: context),
             algorithm: algorithm,
-            context: context
         )
     }
 
@@ -194,10 +191,9 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         context: String? = nil
     ) throws -> UnverifiedBiscuit {
         try self.attenuated(
-            using: Biscuit.DatalogBlock(datalog),
+            using: Biscuit.DatalogBlock(datalog, context: context),
             thirdPartyKey: thirdPartyKey,
             algorithm: algorithm,
-            context: context
         )
     }
 
@@ -214,25 +210,20 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     public func attenuated(
         using datalog: Biscuit.DatalogBlock,
         algorithm: Biscuit.SigningAlgorithm = .ed25519,
-        context: String? = nil
     ) throws -> UnverifiedBiscuit {
         guard case .nextSecret(let lastKey) = self.proof else {
             throw Biscuit.AttenuationError.cannotAttenuateSealedToken
         }
         var interner = self.interner
-        var attenuation = datalog
-        attenuation.attachToBiscuit(interner: &interner.primary, context: context)
         let nextKey = Biscuit.InternalPrivateKey(algorithm: algorithm)
-        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
         var attenuations = self.attenuations
         try attenuations.append(
             Biscuit.Block(
-                datalog: attenuation,
+                datalog: datalog,
                 nextKey: nextKey.publicKey,
                 lastKey: lastKey,
-                lastSig: lastSig,
-                externalSignature: nil,
-                interner: interner.primary
+                lastSig: self.lastBlock.signature,
+                interner: &interner
             )
         )
         return UnverifiedBiscuit(self, attenuations, interner, .nextSecret(nextKey))
@@ -253,36 +244,22 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         using datalog: Biscuit.DatalogBlock,
         thirdPartyKey: Key,
         algorithm: Biscuit.SigningAlgorithm = .ed25519,
-        context: String? = nil
     ) throws -> UnverifiedBiscuit {
         guard case .nextSecret(let lastKey) = self.proof else {
             throw Biscuit.AttenuationError.cannotAttenuateSealedToken
         }
-        var blockInterner = BlockInternmentTable()
-        var attenuation = datalog
-        attenuation.attachToBiscuit(interner: &blockInterner, context: context)
         let nextKey = Biscuit.InternalPrivateKey(algorithm: algorithm)
-        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
         var attenuations = self.attenuations
-        let externalSignature = try Biscuit.Block.ExternalSignature(
-            block: attenuation,
-            lastSig: lastSig,
-            thirdPartyKey: thirdPartyKey,
-            interner: blockInterner
-        )
         try attenuations.append(
             Biscuit.Block(
-                datalog: attenuation,
+                datalog: datalog,
                 nextKey: nextKey.publicKey,
                 lastKey: lastKey,
-                lastSig: lastSig,
-                externalSignature: externalSignature,
-                interner: blockInterner
+                lastSig: self.lastBlock.signature,
+                thirdPartyKey: thirdPartyKey,
             )
         )
-        var interner = self.interner
-        interner.setBlockTable(blockInterner, for: attenuations.count)
-        return UnverifiedBiscuit(self, attenuations, interner, .nextSecret(nextKey))
+        return UnverifiedBiscuit(self, attenuations, self.interner, .nextSecret(nextKey))
     }
 
     /// Seal this Biscuit, producing a new Biscuit which cannot be attenuated further. This Biscuit
@@ -292,10 +269,7 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     /// - Throws: Signing may throw an error
     public func sealed() throws -> UnverifiedBiscuit {
         if case .nextSecret(let key) = self.proof {
-            let sig = try key.sealingSignature(
-                for: self.attenuations.last ?? self.authority,
-                interner: self.interner.blockTable(for: self.attenuations.count)
-            )
+            let sig = try key.sealingSignature(for: self.lastBlock)
             return UnverifiedBiscuit(self, self.attenuations, self.interner, .finalSignature(sig))
         } else {
             return self
@@ -306,14 +280,14 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     /// - Returns: the data representation of this Biscuit
     /// - Throws: May throw an error if protobuf serialization fails
     public func serializedData() throws -> Data {
-        try self.proto().serializedData()
+        try self.proto.serializedData()
     }
 
     /// Serialize this UnverifiedBiscuit to its base64url encoded representation
     /// - Returns: the base64url encoded representation of this Biscuit
     /// - Throws: May thow an error if protobuf serialization fails
     public func base64URLEncoded() throws -> String {
-        let base64Encoded = try self.proto().serializedData().base64EncodedString()
+        let base64Encoded = try self.serializedData().base64EncodedString()
         // Translate base64 into base64url, ignoring padding, as defined in RFC4648.
         return
             base64Encoded
@@ -321,23 +295,20 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
             .replacingOccurrences(of: "/", with: "_")
     }
 
-    func proto() throws -> Biscuit_Format_Schema_Biscuit {
+    var proto: Biscuit_Format_Schema_Biscuit {
         var proto = Biscuit_Format_Schema_Biscuit()
         if let rootKeyID = self.rootKeyID {
             proto.rootKeyID = rootKeyID.rawValue
         }
-        proto.authority = try self.authority.proto(interner: self.interner.primary)
-        proto.blocks = try self.attenuations.enumerated().map {
-            try $1.proto(interner: self.interner.blockTable(for: $0))
-        }
+        proto.authority = self.authority.proto
+        proto.blocks = self.attenuations.map { $0.proto }
         proto.proof = self.proof.proto
         return proto
     }
 
     /// Generates a request for a third party to attenuate this token
     public func generateThirdPartyBlockRequest() -> Biscuit.ThirdPartyBlockRequest {
-        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
-        return Biscuit.ThirdPartyBlockRequest(previousSignature: lastSig)
+        Biscuit.ThirdPartyBlockRequest(previousSignature: self.lastBlock.signature)
     }
 
     /// Attenuate a token with a `ThirdPartyBlockContents`
@@ -353,26 +324,24 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
             throw Biscuit.AttenuationError.cannotAttenuateSealedToken
         }
         let nextKey = Biscuit.InternalPrivateKey(algorithm: algorithm)
-        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
         let attenuation = try Biscuit.Block(
-            datalog: contents.payload,
+            contents: contents,
             nextKey: nextKey.publicKey,
             lastKey: lastKey,
-            lastSig: lastSig,
-            externalSignature: contents.externalSignature,
-            interner: contents.interner
+            lastSig: self.lastBlock.signature
         )
         try contents.externalSignature.isValidSignature(
             for: attenuation,
-            lastSig: lastSig,
-            interner: contents.interner
+            lastSig: self.lastBlock.signature,
         )
         let attenuations = self.attenuations + [attenuation]
-        var interner = self.interner
-        interner.setBlockTable(contents.interner, for: attenuations.count)
-        return UnverifiedBiscuit(self, attenuations, interner, .nextSecret(nextKey))
+        return UnverifiedBiscuit(self, attenuations, self.interner, .nextSecret(nextKey))
     }
 
     /// Whether or not this UnverifiedBiscuit has been sealed
     public var isSealed: Bool { self.proof.isSealed }
+
+    var lastBlock: Biscuit.Block {
+        self.attenuations.last ?? self.authority
+    }
 }

@@ -11,8 +11,7 @@ import Foundation
 extension Biscuit {
     /// Generates a request for a third party to attenuate this token
     public func generateThirdPartyBlockRequest() -> ThirdPartyBlockRequest {
-        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
-        return ThirdPartyBlockRequest(previousSignature: lastSig)
+        ThirdPartyBlockRequest(previousSignature: self.lastBlock.signature)
     }
 
     /// Attenuate a token with a `ThirdPartyBlockContents`
@@ -28,24 +27,18 @@ extension Biscuit {
             throw AttenuationError.cannotAttenuateSealedToken
         }
         let nextKey = InternalPrivateKey(algorithm: algorithm)
-        let lastSig = self.attenuations.last?.signature ?? self.authority.signature
         let attenuation = try Block(
-            datalog: contents.payload,
+            contents: contents,
             nextKey: nextKey.publicKey,
             lastKey: lastKey,
-            lastSig: lastSig,
-            externalSignature: contents.externalSignature,
-            interner: contents.interner
+            lastSig: self.lastBlock.signature
         )
         try contents.externalSignature.isValidSignature(
             for: attenuation,
-            lastSig: lastSig,
-            interner: contents.interner
+            lastSig: self.lastBlock.signature,
         )
         let attenuations = self.attenuations + [attenuation]
-        var interner = self.interner
-        interner.setBlockTable(contents.interner, for: attenuations.count)
-        return Biscuit(self, attenuations, interner, .nextSecret(nextKey))
+        return Biscuit(self, attenuations, self.interner, .nextSecret(nextKey))
     }
 
     /// A request for a third party to attenuate this token
@@ -80,7 +73,7 @@ extension Biscuit {
             context: String? = nil,
             @DatalogBlock using datalog: () throws -> DatalogBlock
         ) throws -> ThirdPartyBlockContents {
-            try ThirdPartyBlockContents(using: datalog(), privateKey, context, self)
+            try ThirdPartyBlockContents(using: DatalogBlock(context: context, datalog), privateKey, self)
         }
 
         /// Generates a block that can be used to attenuate a Biscuit.
@@ -95,15 +88,14 @@ extension Biscuit {
             privateKey: Key,
             context: String? = nil
         ) throws -> ThirdPartyBlockContents {
-            try ThirdPartyBlockContents(using: DatalogBlock(datalog), privateKey, context, self)
+            try ThirdPartyBlockContents(using: DatalogBlock(datalog, context: context), privateKey, self)
         }
 
         public func generateBlock<Key: PrivateKey>(
             using datalog: DatalogBlock,
             privateKey: Key,
-            context: String? = nil
         ) throws -> ThirdPartyBlockContents {
-            try ThirdPartyBlockContents(using: datalog, privateKey, context, self)
+            try ThirdPartyBlockContents(using: datalog, privateKey, self)
         }
 
         /// Serializes this ThirdPartyBlockRequest to its data representation
@@ -123,8 +115,8 @@ extension Biscuit {
     /// The contents of a block signed by a third party with a `ThirdPartyBlockRequest`
     public struct ThirdPartyBlockContents: Sendable, Hashable {
         var payload: DatalogBlock
+        var serializedPayload: Data
         var externalSignature: Block.ExternalSignature
-        var interner: BlockInternmentTable
 
         /// Deserializes a ThirdPartyBlockContents from its data representation.
         /// - Throws: May throw an error during deserialization
@@ -136,25 +128,24 @@ extension Biscuit {
             guard proto.hasExternalSignature else {
                 throw ValidationError.missingExternalSignature
             }
-            self.interner = BlockInternmentTable()
-            self.payload = try DatalogBlock(serializedData: proto.payload, &self.interner)
+            var interner = InternmentTable()
+            self.payload = try DatalogBlock(serializedData: proto.payload, &interner)
+            self.serializedPayload = proto.payload
             self.externalSignature = try Block.ExternalSignature(proto: proto.externalSignature)
         }
 
         init<Key: PrivateKey>(
             using datalog: DatalogBlock,
             _ key: Key,
-            _ context: String?,
             _ request: ThirdPartyBlockRequest
         ) throws {
-            self.interner = BlockInternmentTable()
+            var interner = InternmentTable()
             self.payload = datalog
-            self.payload.attachToBiscuit(interner: &self.interner, context: context)
+            self.serializedPayload = try datalog.serializeInBiscuit(interner: &interner)
             self.externalSignature = try Block.ExternalSignature(
-                block: self.payload,
+                block: self.serializedPayload,
                 lastSig: request.previousSignature,
                 thirdPartyKey: key,
-                interner: self.interner
             )
         }
 
@@ -162,12 +153,12 @@ extension Biscuit {
         /// Returns: the data representation of this ThirdPartyBlockContents
         /// Throws: May throw a serialization error
         public func serializedData() throws -> Data {
-            try self.proto().serializedData()
+            try self.proto.serializedData()
         }
 
-        func proto() throws -> Biscuit_Format_Schema_ThirdPartyBlockContents {
+        var proto: Biscuit_Format_Schema_ThirdPartyBlockContents {
             var proto = Biscuit_Format_Schema_ThirdPartyBlockContents()
-            proto.payload = try self.payload.serializedData(self.interner)
+            proto.payload = self.serializedPayload
             proto.externalSignature = self.externalSignature.proto
             return proto
         }

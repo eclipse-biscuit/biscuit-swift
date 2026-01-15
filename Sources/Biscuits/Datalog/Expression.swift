@@ -12,7 +12,7 @@ import Foundation
 public struct Expression: ExpressionConvertible, Sendable, Hashable, CustomStringConvertible {
     let ops: [Op]
 
-    init(proto: Biscuit_Format_Schema_Expression, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Expression, interner: InternmentTable) throws {
         self.ops = try proto.ops.map { try Op(proto: $0, interner: interner) }
     }
 
@@ -202,12 +202,6 @@ public struct Expression: ExpressionConvertible, Sendable, Hashable, CustomStrin
         Expression(op: .tryOr, lhs: Closure(body: self), rhs: rhs.expression)
     }
 
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Expression {
-        var proto = Biscuit_Format_Schema_Expression()
-        proto.ops = self.ops.map { $0.proto(interner) }
-        return proto
-    }
-
     func evaluate(_ variables: [String: Value]) throws -> Bool {
         var stack: [StackElement] = []
         for op in self.ops {
@@ -243,10 +237,10 @@ public struct Expression: ExpressionConvertible, Sendable, Hashable, CustomStrin
         }
     }
 
-    func intern(_ interner: inout BlockInternmentTable, _ locals: inout [String]) {
-        for op in self.ops {
-            op.intern(&interner, &locals)
-        }
+    func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_Expression {
+        var proto = Biscuit_Format_Schema_Expression()
+        proto.ops = self.ops.map { $0.intern(&interner, &locals) }
+        return proto
     }
 
     public var expression: Expression { self }
@@ -263,7 +257,7 @@ enum Op: Sendable, Hashable {
     case binary(OpBinary)
     case closure(Closure)
 
-    init(proto: Biscuit_Format_Schema_Op, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Op, interner: InternmentTable) throws {
         self =
             switch proto.content {
             case .value(let term): try .value(Term(proto: term, interner: interner))
@@ -274,21 +268,13 @@ enum Op: Sendable, Hashable {
             }
     }
 
-    func intern(_ interner: inout BlockInternmentTable, _ locals: inout [String]) {
-        switch self {
-        case .value(let term): term.intern(&interner, &locals)
-        case .closure(let closure): closure.intern(&interner, &locals)
-        default: return
-        }
-    }
-
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Op {
+    func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_Op {
         var proto = Biscuit_Format_Schema_Op()
         switch self {
-        case .value(let term): proto.value = term.proto(interner)
-        case .unary(let op_unary): proto.unary = op_unary.proto(interner)
-        case .binary(let op_binary): proto.binary = op_binary.proto(interner)
-        case .closure(let op_closure): proto.closure = op_closure.proto(interner)
+        case .value(let term): proto.value = term.intern(&interner, &locals)
+        case .unary(let op_unary): proto.unary = op_unary.intern(&interner, &locals)
+        case .binary(let op_binary): proto.binary = op_binary.intern(&interner, &locals)
+        case .closure(let op_closure): proto.closure = op_closure.intern(&interner, &locals)
         }
         return proto
     }

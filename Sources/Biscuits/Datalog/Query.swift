@@ -12,7 +12,7 @@ extension Biscuit {
         /// The trusted scopes of this query
         public let trusted: [TrustedScope]
 
-        init(proto: Biscuit_Format_Schema_Rule, interner: BlockInternmentTable) throws {
+        init(proto: Biscuit_Format_Schema_Rule, interner: InternmentTable) throws {
             guard proto.head == Predicate.query else {
                 throw ValidationError.invalidQueryHead
             }
@@ -28,27 +28,15 @@ extension Biscuit {
         }
 
         func intern(
-            _ interner: inout BlockInternmentTable,
+            _ interner: inout InternmentTable,
             _ symbols: inout [String],
             _ publicKeys: inout [Biscuit.ThirdPartyKey]
-        ) {
-            for fact in self.predicates {
-                fact.intern(&interner, &symbols)
-            }
-            for expression in self.expressions {
-                expression.intern(&interner, &symbols)
-            }
-            for scope in self.trusted {
-                scope.intern(&interner, &publicKeys)
-            }
-        }
-
-        func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Rule {
+        ) -> Biscuit_Format_Schema_Rule {
             var proto = Biscuit_Format_Schema_Rule()
             proto.head = Predicate.query
-            proto.body = self.predicates.map { $0.proto(interner) }
-            proto.expressions = self.expressions.map { $0.proto(interner) }
-            proto.scope = self.trusted.map { $0.proto(interner) }
+            proto.body = self.predicates.map { $0.intern(&interner, &symbols) }
+            proto.expressions = self.expressions.map { $0.intern(&interner, &symbols) }
+            proto.scope = self.trusted.map { $0.intern(&interner, &publicKeys) }
             return proto
         }
 

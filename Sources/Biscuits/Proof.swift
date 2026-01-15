@@ -24,10 +24,10 @@ extension Biscuit {
             }
         }
 
-        func isValidProof(for block: Block, interner: BlockInternmentTable) throws {
+        func isValidProof(for block: Block) throws {
             switch self {
             case .finalSignature(let sig):
-                try block.nextKey.isValidSealingSignature(sig, for: block, interner: interner)
+                try block.nextKey.isValidSealingSignature(sig, for: block)
             case .nextSecret(let nextKey):
                 guard block.nextKey == nextKey.publicKey else {
                     throw ValidationError.invalidProof

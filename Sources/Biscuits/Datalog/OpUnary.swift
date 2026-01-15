@@ -6,7 +6,7 @@ enum OpUnary: Sendable, Hashable {
     case negate, parens, length, typeOf
     case ffi(String)
 
-    init(proto: Biscuit_Format_Schema_OpUnary, interner: BlockInternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_OpUnary, interner: InternmentTable) throws {
         guard proto.hasKind else {
             throw Biscuit.ValidationError.missingOp
         }
@@ -23,15 +23,15 @@ enum OpUnary: Sendable, Hashable {
         }
     }
 
-    func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_OpUnary {
+    func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_OpUnary {
         var proto = Biscuit_Format_Schema_OpUnary()
         switch self {
         case .negate: proto.kind = .negate
         case .parens: proto.kind = .parens
         case .length: proto.kind = .length
         case .typeOf: proto.kind = .typeOf
-        case .ffi(let s):
-            proto.ffiName = UInt64(interner.symbolIndex(for: s))
+        case .ffi(let name):
+            proto.ffiName = UInt64(interner.intern(name, &locals))
             proto.kind = .ffi
         }
         return proto

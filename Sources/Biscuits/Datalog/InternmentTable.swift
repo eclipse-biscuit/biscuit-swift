@@ -2,39 +2,16 @@
  * Copyright (c) 2025 Contributors to the Eclipse Foundation.
  * SPDX-License-Identifier: Apache-2.0
  */
-struct InternmentTables: Sendable, Hashable {
-    var primary: BlockInternmentTable = BlockInternmentTable()
-    var thirdPartyTables: [Int: BlockInternmentTable] = [:]
 
-    subscript(index: Resolution.Scope) -> BlockInternmentTable {
-        get {
-            if let blockID = index.blockID {
-                self.blockTable(for: blockID)
-            } else {
-                self.primary
-            }
-        }
-    }
-
-    func blockTable(for blockID: Int) -> BlockInternmentTable {
-        self.thirdPartyTables[blockID] ?? self.primary
-    }
-
-    mutating func setBlockTable(_ table: BlockInternmentTable, for blockID: Int) {
-        self.thirdPartyTables[blockID] = table
-    }
-}
-
-struct BlockInternmentTable: Sendable, Hashable {
-    var symbols: InternmentTable<String> = InternmentTable()
-    var publicKeys: InternmentTable<Biscuit.ThirdPartyKey> = InternmentTable()
+struct InternmentTable: Sendable, Hashable {
+    var symbols: InternmentTableInner<String> = InternmentTableInner()
+    var publicKeys: InternmentTableInner<Biscuit.ThirdPartyKey> = InternmentTableInner()
 
     mutating func extend(_ symbols: [String], _ publicKeys: [Biscuit.ThirdPartyKey]) throws {
         try self.symbols.extend(symbols, Biscuit.ValidationError.duplicateSymbol)
         try self.publicKeys.extend(publicKeys, Biscuit.ValidationError.duplicatePublicKey)
     }
 
-    @discardableResult
     mutating func intern(_ symbol: String, _ locals: inout [String]) -> Int {
         if let idx = defaultSymbols[symbol] {
             return idx
@@ -43,7 +20,6 @@ struct BlockInternmentTable: Sendable, Hashable {
         }
     }
 
-    @discardableResult
     mutating func intern(_ publicKey: Biscuit.ThirdPartyKey, _ locals: inout [Biscuit.ThirdPartyKey]) -> Int {
         self.publicKeys.intern(publicKey, &locals)
     }
@@ -78,7 +54,7 @@ struct BlockInternmentTable: Sendable, Hashable {
         }
     }
 
-    struct InternmentTable<T: Sendable & Hashable>: Sendable, Hashable {
+    struct InternmentTableInner<T: Sendable & Hashable>: Sendable, Hashable {
         var table: [T: Int] = [:]
         var array: [T] = []
 

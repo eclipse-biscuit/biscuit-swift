@@ -12,9 +12,6 @@ extension Biscuit {
     /// A block of Datalog that can be included as part of a Biscuit
     @resultBuilder
     public struct DatalogBlock: Sendable, Hashable, CustomStringConvertible {
-        var version: UInt32
-        var symbols: [String]
-        var publicKeys: [Biscuit.ThirdPartyKey]
         /// The context string of this block, if one was specified
         public var context: String?
         /// The checks contained in this block
@@ -33,9 +30,6 @@ extension Biscuit {
             trusted: [TrustedScope] = [],
             context: String? = nil
         ) {
-            self.version = 6
-            self.symbols = []
-            self.publicKeys = []
             self.context = context
             self.checks = checks
             self.facts = facts
@@ -48,7 +42,11 @@ extension Biscuit {
         /// - Parameter context: the context that will be included with this DatalogBlock
         /// - Parameter datalog: the Datalog contents of this DatalogBlock
         public init(context: String? = nil, @DatalogBlock _ datalog: () throws -> DatalogBlock) rethrows {
-            self = try datalog()
+            let datalog = try datalog()
+            self.checks = datalog.checks
+            self.facts = datalog.facts
+            self.rules = datalog.rules
+            self.trusted = datalog.trusted
             self.context = context
         }
 
@@ -58,9 +56,6 @@ extension Biscuit {
         /// - Parameter datalog: the Datalog contents of this DatalogBlock as a String
         public init(_ datalog: String, context: String? = nil) throws {
             let parser = try Parser.forDatalogBlock(using: datalog)
-            self.version = 6
-            self.symbols = parser.symbols
-            self.publicKeys = parser.publicKeys
             self.checks = parser.checks
             self.facts = parser.facts
             self.rules = parser.rules
@@ -124,26 +119,24 @@ extension Biscuit {
             return [trusting, facts, rules, checks].joined(separator: "\n")
         }
 
-        mutating func attachToBiscuit(interner: inout BlockInternmentTable, context: String?) {
-            for trusted in self.trusted {
-                trusted.intern(&interner, &self.publicKeys)
+        func serializeInBiscuit(interner: inout InternmentTable) throws -> Data {
+            var proto = Biscuit_Format_Schema_Block()
+            var symbols: [String] = []
+            var publicKeys: [ThirdPartyKey] = []
+            if let context = self.context {
+                proto.context = context
             }
-            for fact in self.facts {
-                fact.intern(&interner, &self.symbols)
-            }
-            for rule in self.rules {
-                rule.intern(&interner, &self.symbols, &self.publicKeys)
-            }
-            for check in self.checks {
-                check.intern(&interner, &self.symbols, &self.publicKeys)
-            }
-            self.context = (self.context ?? "") + (context ?? "")
-            if self.context == "" {
-                self.context = nil
-            }
+            proto.version = 6
+            proto.scope = self.trusted.map { $0.intern(&interner, &publicKeys) }
+            proto.facts = self.facts.map { $0.intern(&interner, &symbols) }
+            proto.rules = self.rules.map { $0.intern(&interner, &symbols, &publicKeys) }
+            proto.checks = self.checks.map { $0.intern(&interner, &symbols, &publicKeys) }
+            proto.symbols = symbols
+            proto.publicKeys = publicKeys.map { $0.proto }
+            return try proto.serializedData()
         }
 
-        init(serializedData data: Data, _ interner: inout BlockInternmentTable) throws {
+        init(serializedData data: Data, _ interner: inout InternmentTable) throws {
             let proto = try Biscuit_Format_Schema_Block(serializedBytes: data)
             guard proto.hasVersion else {
                 throw Biscuit.ValidationError.missingVersion
@@ -151,40 +144,18 @@ extension Biscuit {
             guard proto.version >= 3 && proto.version <= 6 else {
                 throw Biscuit.ValidationError.invalidVersion
             }
-            self.version = proto.version
-            self.symbols = proto.symbols
-            self.publicKeys = proto.publicKeys.map { Biscuit.ThirdPartyKey(proto: $0) }
-            try interner.extend(self.symbols, self.publicKeys)
+            let symbols = proto.symbols
+            let publicKeys = proto.publicKeys.map { Biscuit.ThirdPartyKey(proto: $0) }
+            try interner.extend(symbols, publicKeys)
             if proto.hasContext {
                 self.context = proto.context
+            } else {
+                self.context = nil
             }
             self.checks = try proto.checks.map { try Check(proto: $0, interner: interner) }
             self.facts = try proto.facts.map { try Fact(proto: $0.predicate, interner: interner) }
             self.rules = try proto.rules.map { try Rule(proto: $0, interner: interner) }
             self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner) }
-        }
-
-        func serializedData(_ interner: BlockInternmentTable) throws -> Data {
-            try self.proto(interner).serializedData()
-        }
-
-        func proto(_ interner: BlockInternmentTable) -> Biscuit_Format_Schema_Block {
-            var proto = Biscuit_Format_Schema_Block()
-            proto.symbols = self.symbols
-            if let context = self.context {
-                proto.context = context
-            }
-            proto.version = self.version
-            proto.checks = self.checks.map { $0.proto(interner) }
-            proto.facts = self.facts.map {
-                var fact = Biscuit_Format_Schema_Fact()
-                fact.predicate = $0.proto(interner)
-                return fact
-            }
-            proto.rules = self.rules.map { $0.proto(interner) }
-            proto.scope = self.trusted.map { $0.proto(interner) }
-            proto.publicKeys = self.publicKeys.map { $0.proto }
-            return proto
         }
     }
 }
