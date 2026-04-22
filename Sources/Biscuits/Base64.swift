@@ -21,21 +21,22 @@ func base64URLEncoded(_ data: Data) -> String {
 }
 
 func base64URLDecoded(_ data: String) throws -> Data {
-    return try manualBase64URLDecoded(data)
+    try manualBase64URLDecoded(data)
 }
 
-fileprivate func manualBase64URLEncoded(_ data: Data) -> String {
+private func manualBase64URLEncoded(_ data: Data) -> String {
     data.base64EncodedString()
         .replacingOccurrences(of: "+", with: "-")
         .replacingOccurrences(of: "/", with: "_")
         .replacingOccurrences(of: "=", with: "")
 }
 
-fileprivate func manualBase64URLDecoded(_ data: String) throws -> Data {
-    var base64Encoded = data
+private func manualBase64URLDecoded(_ data: String) throws -> Data {
+    var base64Encoded =
+        data
         .replacingOccurrences(of: "-", with: "+")
         .replacingOccurrences(of: "_", with: "/")
-    
+
     // Swift's base64 decoding requires padding bytes whereas base64url usually does not contain
     // padding bytes.
     if base64Encoded.count % 4 != 0 {
