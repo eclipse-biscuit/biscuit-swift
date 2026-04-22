@@ -1,3 +1,8 @@
+# `2.0.1`
+
+- Fix bug in base64url encoding/decoding: now accept base64url data with our without padding bytes
+  and emit data without padding bytes (previously always required padding bytes)
+
 # `2.0.0`
 
 - Fix platform minimum versions being too low for iOS, tvOS, and watchOS
