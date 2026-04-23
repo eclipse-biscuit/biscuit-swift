@@ -168,16 +168,7 @@ public struct Biscuit: Sendable, Hashable {
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if
     /// base64url or the underlying data is not in the proper format or signatures are not valid
     public init<Key: PublicKey>(base64URLEncoded: String, getRootKey: (RootKeyID?) -> Key?) throws {
-        // Translate base64url into base64, ignoring padding, as defined in RFC4648.
-        let base64Encoded =
-            base64URLEncoded
-            .replacingOccurrences(of: "-", with: "+")
-            .replacingOccurrences(of: "_", with: "/")
-
-        guard let data = Data(base64Encoded: base64Encoded) else {
-            throw ValidationError.invalidBase64URLString
-        }
-
+        let data = try Biscuits.base64URLDecoded(base64URLEncoded)
         try self.init(serializedData: data, getRootKey: getRootKey)
     }
 
@@ -415,12 +406,8 @@ public struct Biscuit: Sendable, Hashable {
     /// - Returns: the base64url encoded representation of this Biscuit
     /// - Throws: May thow an error if protobuf serialization fails
     public func base64URLEncoded() throws -> String {
-        let base64Encoded = try self.serializedData().base64EncodedString()
-        // Translate base64 into base64url, ignoring padding, as defined in RFC4648.
-        return
-            base64Encoded
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
+        let data = try self.serializedData()
+        return Biscuits.base64URLEncoded(data)
     }
 
     /// Whether or not this Biscuit has been sealed
