@@ -316,7 +316,7 @@ final class BiscuitsTests: XCTestCase {
         // Generated with biscuit-cli, by running this (with private key from above `biscuit keypair` command):
         //   $ echo 'flavor("buttermilk")' | biscuit generate --private-key "ed25519/ffedda2d87d1735763a707838833f3539b4a0d6cd53c6ded31875162ca0b8e83" -
         let encodedBiscuit =
-            "EowBCiIKBmZsYXZvcgoKYnV0dGVybWlsaxgDIgoKCAiACBIDGIEIEiQIABIgl0EWCFozow3RiEOtTcpY0O7ZADutOWZZ3wTJ0QKx5XMaQI4VPeolN94zLHxvP0JDvSuBeMe3wGmkcsD32u2wGegMdQiK78hiNclVjUr_9MOlHEr72kPIPiTQNXmk6AvlEggiIgogRWH7vgsJR3d8xreGt_8Trodp4x9eRZSgbBvDQzUeh9s"
+            "EowBCiIKBmZsYXZvcgoKYnV0dGVybWlsaxgDIgoKCAiACBIDGIEIEiQIABIgl0EWCFozow3RiEOtTcpY0O7ZADutOWZZ3wTJ0QKx5XMaQI4VPeolN94zLHxvP0JDvSuBeMe3wGmkcsD32u2wGegMdQiK78hiNclVjUr_9MOlHEr72kPIPiTQNXmk6AvlEggiIgogRWH7vgsJR3d8xreGt_8Trodp4x9eRZSgbBvDQzUeh9s="
 
         // Make sure we can construct the biscuit, and verify it was signed with our private key.
         let biscuit = try Biscuit(

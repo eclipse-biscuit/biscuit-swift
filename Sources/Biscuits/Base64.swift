@@ -11,7 +11,7 @@ import Foundation
 func base64URLEncoded(_ data: Data) -> String {
     #if compiler(>=6.3)
     if #available(macOS 26.4, iOS 26.4, tvOS 26.4, watchOS 26.4, visionOS 26.4, *) {
-        return data.base64EncodedString(options: [.base64URLAlphabet, .omitPaddingCharacter])
+        return data.base64EncodedString(options: [.base64URLAlphabet])
     } else {
         return manualBase64URLEncoded(data)
     }
@@ -28,7 +28,6 @@ private func manualBase64URLEncoded(_ data: Data) -> String {
     data.base64EncodedString()
         .replacingOccurrences(of: "+", with: "-")
         .replacingOccurrences(of: "/", with: "_")
-        .replacingOccurrences(of: "=", with: "")
 }
 
 private func manualBase64URLDecoded(_ data: String) throws -> Data {

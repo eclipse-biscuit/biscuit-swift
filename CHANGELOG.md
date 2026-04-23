@@ -1,7 +1,6 @@
 # `2.0.1`
 
-- Fix bug in base64url encoding/decoding: now accept base64url data with or without padding bytes
-  and emit data without padding bytes (previously always required padding bytes)
+- Fix bug in base64url decoding: now accept base64url data with or without padding bytes
 
 # `2.0.0`
 
