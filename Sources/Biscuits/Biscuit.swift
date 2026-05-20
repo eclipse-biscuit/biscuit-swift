@@ -443,16 +443,6 @@ public struct Biscuit: Sendable, Hashable {
         public var debugDescription: String { String(reflecting: self.rawValue) }
     }
 
-    /// The result of a successful authorization check on a Biscuit
-    public struct Authorization: Sendable, Hashable {
-        /// Which policy statement passed, resulting in the successful authorization
-        public let successfulPolicy: Policy
-
-        init(policy: Policy) {
-            self.successfulPolicy = policy
-        }
-    }
-
     /// Query the biscuit to check if a certain statement holds true
     /// - Parameter check: The Check to use to query the biscuit
     /// - Parameter limitedBy: Limitations on the runtime for this query
@@ -502,5 +492,65 @@ public struct Biscuit: Sendable, Hashable {
 
     var lastBlock: Block {
         self.attenuations.last ?? self.authority
+    }
+    /// Query the biscuit to extract values from it
+    ///
+    /// Some number of names and types is passed as the "result" parameter; these should be the
+    /// names of variables that appear in the predicates of the query. This query will return
+    /// tuples of values that satisfy the predicates when bound to those names.
+    ///
+    /// - Parameter result: a sequence of tuples containing the name of a variable used in the
+    /// query and the type that variable is expected to be
+    /// - Parameter trusting: identities to trust when evaluating this query
+    /// - Parameter predicates: The predicates of this query
+    /// - Returns: An array of all the tuples of values which satisfy the predicates
+    /// - Throws: Throws an `AuthorizationError` if the biscuit does not pass authorization, or an
+    /// `EvaluationError` if the query cannot be evaluated, an `InvalidQueryError` if the query is
+    /// invalid or an `InvalidValueError` if a value does not have the expected type
+    public func queryValues<each V: ExpressibleByValue, each T: TrustedScopeConvertible>(
+        result: repeat (String, (each V).Type),
+        trusting: repeat each T,
+        limitedBy: Authorizer.Limits = Authorizer.Limits.noLimits,
+        @Biscuit.StatementBuilder predicates: () throws -> Biscuit.StatementBuilder
+    ) throws -> [(repeat each V)] {
+        let resolution = try Resolution(biscuit: self, authorizer: Authorizer(limits: limitedBy))
+        let query = try predicates()
+        var scopes: [TrustedScope] = []
+        repeat scopes.append((each trusting).trustedScope)
+        let trusted = resolution.trustScopes(scopes, nil)
+        let variables = try resolution.queryValues(query.predicates, query.expressions, trusted)
+        return try variables.map { vars in
+            (repeat try unpackVariable(vars, (each result).0, (each result).1))
+        }
+    }
+
+    /// Query the biscuit to extract values from it, expecting only one tuple of matching values.
+    ///
+    /// Some number of names and types is passed as the "result" parameter; these should be the
+    /// names of variables that appear in the predicates of the query. This query will return tuples
+    /// of values that satisfy the predicates when bound to those names.
+    ///
+    /// - Parameter result: a sequence of tuples containing the name of a variable used in the
+    /// query and the type that variable is expected to be
+    /// - Parameter trusting: identities to trust when evaluating this query
+    /// - Parameter predicates: The predicates of this query
+    /// - Returns: The tuples of values which satisfy the predicates
+    /// - Throws: Throws an `AuthorizationError` if the biscuit does not pass authorization, or an
+    /// `EvaluationError` if the query cannot be evaluated, an `InvalidQueryError` if the query is
+    /// invalid or returns too many or too few results, or an `InvalidValueError` if a value does
+    /// not have the expected type
+    public func queryValuesExpectingOne<each V: ExpressibleByValue, each T: TrustedScopeConvertible>(
+        result: repeat (String, (each V).Type),
+        trusting: repeat each T,
+        limitedBy: Authorizer.Limits = Authorizer.Limits.noLimits,
+        @Biscuit.StatementBuilder predicates: () throws -> Biscuit.StatementBuilder
+    ) throws -> (repeat each V) {
+        let resolution = try Resolution(biscuit: self, authorizer: Authorizer(limits: limitedBy))
+        let query = try predicates()
+        var scopes: [TrustedScope] = []
+        repeat scopes.append((each trusting).trustedScope)
+        let trusted = resolution.trustScopes(scopes, nil)
+        let variables = try resolution.queryValuesExpectingOne(query.predicates, query.expressions, trusted)
+        return (repeat try unpackVariable(variables, (each result).0, (each result).1))
     }
 }

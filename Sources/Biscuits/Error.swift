@@ -233,6 +233,47 @@ extension Biscuit {
         }
     }
 
+    /// An error that occurred while evaluating a value query
+    public struct InvalidQueryError: Sendable, Hashable, Error, CustomStringConvertible {
+        internal enum ErrorCode: Hashable {
+            case missingVariable
+            case tooManyResults
+            case notEnoughResults
+        }
+
+        let code: ErrorCode
+
+        init(_ code: ErrorCode) {
+            self.code = code
+        }
+
+        static var missingVariable: Self { Self(.missingVariable) }
+        static var tooManyResults: Self { Self(.tooManyResults) }
+        static var notEnoughResults: Self { Self(.notEnoughResults) }
+
+        public var description: String {
+            switch self.code {
+            case .missingVariable: "variable missing from query"
+            case .tooManyResults: "multiple valid query results when only one was expected"
+            case .notEnoughResults: "no valid query results"
+            }
+        }
+    }
+
+    /// An error that occurred while casting a value to a specific value type
+    public struct InvalidValueError: Sendable, Hashable, Error, CustomStringConvertible {
+        let expected: String
+
+        public init<V>(expected: V.Type) {
+            self.expected = "\(expected)"
+        }
+
+        public var description: String {
+            "invalid value: expected \(expected)"
+        }
+
+    }
+
     /// An error that occurred while validating the serialized data representation of a Biscuit
     public struct ValidationError: Sendable, Hashable, Error, CustomStringConvertible {
         internal enum ErrorCode: Hashable {
