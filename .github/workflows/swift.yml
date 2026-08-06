@@ -14,10 +14,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check formatting
         run: |
-            swift-format format Sources --in-place --recursive 
-            swift-format format Tests --in-place --recursive 
+            swift format --in-place --recursive Sources Tests
             if test -n "$(git ls-files -m)"; then
-              echo 'Some files were not properly formatted, please run `swift-format`'
+              echo 'Some files were not properly formatted, please run `swift format --in-place --recursive Sources Tests`'
               git status
               exit 1;
             fi
