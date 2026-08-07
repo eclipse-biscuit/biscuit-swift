@@ -624,7 +624,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     func opGet(_ rhs: Value) throws -> Value {
         switch (self.wrapped, rhs.wrapped) {
         case (.array(let array), .integer(let i)):
-            return array.count > i ? array[Int(i)] : Value.null
+            return array.count > i && i >= 0 ? array[Int(i)] : Value.null
         case (.map(let map), .integer(let x)):
             return map[MapKey(.integer(x))] ?? Value.null
         case (.map(let map), .string(let x)):
