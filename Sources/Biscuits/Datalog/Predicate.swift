@@ -37,7 +37,7 @@ public struct Predicate: Sendable, Hashable, CustomStringConvertible {
         guard proto.hasName else {
             throw Biscuit.ValidationError.missingPredicate
         }
-        self.name = try interner.lookupSymbol(Int(proto.name))
+        self.name = try interner.lookupSymbol(proto.name)
         self.terms = try proto.terms.map { try Term(proto: $0, interner: interner) }
     }
 

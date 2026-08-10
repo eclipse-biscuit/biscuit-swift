@@ -22,7 +22,7 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
         self.wrapped =
             switch proto.content {
             case .integer(let i): .integer(i)
-            case .string(let s): try .string(interner.lookupSymbol(Int(s)))
+            case .string(let s): try .string(interner.lookupSymbol(s))
             case .none: throw Biscuit.ValidationError.missingTerm
             }
     }

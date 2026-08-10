@@ -31,7 +31,7 @@ public struct Term: TermConvertible, ExpressionConvertible, Sendable, Hashable, 
     init(proto: Biscuit_Format_Schema_Term, interner: InternmentTable) throws {
         self.wrapped =
             switch proto.content {
-            case .variable(let v): try .variable(interner.lookupSymbol(Int(v)))
+            case .variable(let v): try .variable(interner.lookupSymbol(v))
             default: try .value(Value(proto: proto, interner: interner))
             }
     }

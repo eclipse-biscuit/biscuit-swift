@@ -35,7 +35,7 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
             switch proto.content {
             case .scopeType(.authority): .authority
             case .scopeType(.previous): .previous
-            case .publicKey(let key): try .publicKey(interner.lookupPublicKey(Int(key)))
+            case .publicKey(let key): try .publicKey(interner.lookupPublicKey(key))
             case .none: throw Biscuit.ValidationError.missingScope
             }
     }
