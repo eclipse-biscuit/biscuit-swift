@@ -33,7 +33,7 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
             throw Biscuit.ValidationError.missingAuthority
         }
         if proto.hasRootKeyID {
-            self.rootKeyID = Biscuit.RootKeyID(Int(proto.rootKeyID))
+            self.rootKeyID = Biscuit.RootKeyID(rawValue: proto.rootKeyID)
         } else {
             self.rootKeyID = nil
         }

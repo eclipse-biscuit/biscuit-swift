@@ -18,7 +18,7 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
     }
 
     init(proto: Biscuit_Format_Schema_OpClosure, interner: InternmentTable) throws {
-        self.params = try proto.params.map { try interner.lookupSymbol(Int($0)) }
+        self.params = try proto.params.map { try interner.lookupSymbol($0) }
         self.ops = try proto.ops.map { try Op(proto: $0, interner: interner) }
     }
 

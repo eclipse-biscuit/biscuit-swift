@@ -19,7 +19,7 @@ enum OpUnary: Sendable, Hashable {
             guard proto.hasFfiName else {
                 throw Biscuit.ValidationError.missingFFI
             }
-            self = try .ffi(interner.lookupSymbol(Int(proto.ffiName)))
+            self = try .ffi(interner.lookupSymbol(proto.ffiName))
         }
     }
 

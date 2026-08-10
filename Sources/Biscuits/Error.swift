@@ -252,8 +252,7 @@ extension Biscuit {
             case missingPublicKey
             case missingSignature
             case unknownRootKey
-            case unknownPublicKey
-            case unknownSymbol
+            case invalidIndex
             case thirdPartySignedAuthority
             case deprecatedThirdPartySignature
 
@@ -294,8 +293,7 @@ extension Biscuit {
         static var missingPublicKey: Self { Self(.missingPublicKey) }
         static var missingSignature: Self { Self(.missingSignature) }
         static var unknownRootKey: Self { Self(.unknownRootKey) }
-        static var unknownPublicKey: Self { Self(.unknownSymbol) }
-        static var unknownSymbol: Self { Self(.unknownSymbol) }
+        static var invalidIndex: Self { Self(.invalidIndex) }
         static var thirdPartySignedAuthority: Self { Self(.thirdPartySignedAuthority) }
         static var deprecatedThirdPartySignature: Self { Self(.deprecatedThirdPartySignature) }
 
@@ -323,8 +321,7 @@ extension Biscuit {
             case .invalidQueryHead: "Checks must have query as their head"
             case .invalidVersion: "Biscuit version is invalid"
             case .unknownRootKey: "Biscuit signed with unknown root key"
-            case .unknownPublicKey: "Biscuit contains unknown public key"
-            case .unknownSymbol: "Biscuit contains unknown symbol"
+            case .invalidIndex: "Biscuit contains an out of range symbol or public key index"
             case .missingAuthority: "Biscuit is missing an authority block"
             case .missingBlockData: " Biscuit block is missing Datalog contents"
             case .missingExternalSignature: "Biscuit ThirdPartyBlockContents is missing third party signature"

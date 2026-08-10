@@ -28,30 +28,20 @@ struct InternmentTable: Sendable, Hashable {
         defaultSymbols[symbol] ?? self.symbols.index(for: symbol) + 1024
     }
 
-    func lookupSymbol(_ idx: Int) throws -> String {
+    func lookupSymbol<Index: BinaryInteger>(_ idx: Index) throws -> String {
+        let idx = try idx.validatedIndex()
         if idx < 1024 {
-            guard idx < defaultSymbolsArray.count else {
-                throw Biscuit.ValidationError.unknownSymbol
-            }
-            return defaultSymbolsArray[idx]
+            return try defaultSymbolsArray.element(at: idx)
         }
-        if let symbol = self.symbols.lookup(idx - 1024) {
-            return symbol
-        } else {
-            throw Biscuit.ValidationError.unknownSymbol
-        }
+        return try self.symbols.lookup(idx - 1024)
     }
 
     func publicKeyIndex(for publicKey: Biscuit.ThirdPartyKey) -> Int {
         self.publicKeys.index(for: publicKey)
     }
 
-    func lookupPublicKey(_ idx: Int) throws -> Biscuit.ThirdPartyKey {
-        if let publicKey = self.publicKeys.lookup(idx) {
-            return publicKey
-        } else {
-            throw Biscuit.ValidationError.unknownPublicKey
-        }
+    func lookupPublicKey<Index: BinaryInteger>(_ idx: Index) throws -> Biscuit.ThirdPartyKey {
+        try self.publicKeys.lookup(idx.validatedIndex())
     }
 
     struct InternmentTableInner<T: Sendable & Hashable>: Sendable, Hashable {
@@ -84,9 +74,8 @@ struct InternmentTable: Sendable, Hashable {
             self.table[value]!
         }
 
-        func lookup(_ idx: Int) -> T? {
-            guard idx < self.array.count else { return nil }
-            return self.array[idx]
+        func lookup(_ idx: Int) throws -> T {
+            try self.array.element(at: idx)
         }
     }
 }

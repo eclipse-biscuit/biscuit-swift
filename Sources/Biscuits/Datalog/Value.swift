@@ -185,7 +185,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
         self.wrapped =
             switch proto.content {
             case .integer(let i): .integer(i)
-            case .string(let s): try .string(interner.lookupSymbol(Int(s)))
+            case .string(let s): try .string(interner.lookupSymbol(s))
             case .date(let d): .date(Date(timeIntervalSince1970: TimeInterval(d)))
             case .bytes(let b): .bytes(b)
             case .bool(let b): .bool(b)
