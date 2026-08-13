@@ -9,7 +9,8 @@ import Foundation
 #endif
 
 /// A Value that can be used as a key in a map
-public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, ExpressionConvertible, Hashable, Sendable,
+public struct MapKey: ExpressibleByMapKey, MapKeyConvertible, ValueConvertible, TermConvertible, ExpressionConvertible,
+    Hashable, Sendable,
     CustomStringConvertible
 {
     internal enum Wrapped: Hashable {
@@ -35,6 +36,10 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
     /// A string MapKey
     public init(_ string: String) {
         self.wrapped = .string(string)
+    }
+
+    public init(mapKey: MapKey) throws {
+        self = mapKey
     }
 
     init(_ wrapped: Wrapped) {
@@ -72,10 +77,29 @@ public protocol MapKeyConvertible: ValueConvertible {
     var mapKey: MapKey { get }
 }
 
-extension Int: MapKeyConvertible {
+/// Anything which can be expressed as a MapKey
+public protocol ExpressibleByMapKey {
+    init(mapKey: MapKey) throws
+}
+
+extension Int: ExpressibleByMapKey, MapKeyConvertible {
+    public init(mapKey: MapKey) throws {
+        switch mapKey.wrapped {
+        case .integer(let int): self = Int(int)
+        default: throw Biscuit.InvalidValueError(expected: Int.self)
+        }
+    }
+
     public var mapKey: MapKey { MapKey(self) }
 }
 
-extension String: MapKeyConvertible {
+extension String: ExpressibleByMapKey, MapKeyConvertible {
+    public init(mapKey: MapKey) throws {
+        switch mapKey.wrapped {
+        case .string(let string): self = string
+        default: throw Biscuit.InvalidValueError(expected: String.self)
+        }
+    }
+
     public var mapKey: MapKey { MapKey(self) }
 }

@@ -2,6 +2,7 @@
  * Copyright (c) 2025 Contributors to the Eclipse Foundation.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 extension Biscuit {
     /// A query about a Biscuit that can be true or false.
     public struct Query: Sendable, Hashable, CustomStringConvertible {

@@ -9,7 +9,7 @@ import Foundation
 #endif
 
 /// A Datalog literal value; a `Term` which is not a variable
-public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, Sendable, Hashable,
+public struct Value: ExpressibleByValue, ValueConvertible, TermConvertible, ExpressionConvertible, Sendable, Hashable,
     CustomStringConvertible
 {
     enum Wrapped: Hashable {
@@ -48,6 +48,10 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     /// A boolean Value
     public init(_ bool: Bool) {
         self.wrapped = .bool(bool)
+    }
+
+    public init(value: Value) throws {
+        self = value
     }
 
     /// The null Value
@@ -695,22 +699,94 @@ public protocol ValueConvertible: TermConvertible {
     var value: Value { get }
 }
 
-extension Int: ValueConvertible, TermConvertible, ExpressionConvertible {
+/// Anything which can be expressed as a Value
+public protocol ExpressibleByValue {
+    init(value: Value) throws
+}
+
+extension Int: ExpressibleByValue, ValueConvertible, TermConvertible, ExpressionConvertible {
+    public init(value: Value) throws {
+        switch value.wrapped {
+        case .integer(let int): self = Int(int)
+        default: throw Biscuit.InvalidValueError(expected: Int.self)
+        }
+    }
+
     public var value: Value { Value(self) }
 }
 
-extension String: ValueConvertible, TermConvertible, ExpressionConvertible {
+extension String: ExpressibleByValue, ValueConvertible, TermConvertible, ExpressionConvertible {
+    public init(value: Value) throws {
+        switch value.wrapped {
+        case .string(let string): self = string
+        default: throw Biscuit.InvalidValueError(expected: String.self)
+        }
+    }
+
     public var value: Value { Value(self) }
 }
 
-extension Date: ValueConvertible, TermConvertible, ExpressionConvertible {
+extension Date: ExpressibleByValue, ValueConvertible, TermConvertible, ExpressionConvertible {
+    public init(value: Value) throws {
+        switch value.wrapped {
+        case .date(let date): self = date
+        default: throw Biscuit.InvalidValueError(expected: Date.self)
+        }
+    }
+
     public var value: Value { Value(self) }
 }
 
-extension Data: ValueConvertible, TermConvertible, ExpressionConvertible {
+extension Data: ExpressibleByValue, ValueConvertible, TermConvertible, ExpressionConvertible {
+    public init(value: Value) throws {
+        switch value.wrapped {
+        case .bytes(let data): self = data
+        default: throw Biscuit.InvalidValueError(expected: Data.self)
+        }
+    }
+
     public var value: Value { Value(self) }
 }
 
-extension Bool: ValueConvertible, TermConvertible, ExpressionConvertible {
+extension Bool: ExpressibleByValue, ValueConvertible, TermConvertible, ExpressionConvertible {
+    public init(value: Value) throws {
+        switch value.wrapped {
+        case .bool(let boolean): self = boolean
+        default: throw Biscuit.InvalidValueError(expected: Bool.self)
+        }
+    }
+
     public var value: Value { Value(self) }
+}
+
+extension Array: ExpressibleByValue where Element: ExpressibleByValue {
+    public init(value: Value) throws {
+        switch value.wrapped {
+        case .array(let array): self = try array.map { try Element(value: $0) }
+        default: throw Biscuit.InvalidValueError(expected: Array.self)
+        }
+    }
+}
+
+extension Dictionary: ExpressibleByValue where Key: ExpressibleByMapKey, Value: ExpressibleByValue {
+    public init(value: Biscuits.Value) throws {
+        switch value.wrapped {
+        case .map(let map):
+            self = try Dictionary(
+                uniqueKeysWithValues: map.map {
+                    (try Key(mapKey: $0), try Value(value: $1))
+                }
+            )
+        default: throw Biscuit.InvalidValueError(expected: Dictionary.self)
+        }
+    }
+}
+
+extension Set: ExpressibleByValue where Element: ExpressibleByValue {
+    public init(value: Value) throws {
+        switch value.wrapped {
+        case .set(let set): self = try Set(set.map { try Element(value: $0) })
+        default: throw Biscuit.InvalidValueError(expected: Set.self)
+        }
+    }
 }

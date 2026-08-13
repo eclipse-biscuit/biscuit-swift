@@ -2,6 +2,7 @@
  * Copyright (c) 2025 Contributors to the Eclipse Foundation.
  * SPDX-License-Identifier: Apache-2.0
  */
+
 extension Biscuit {
     func validateChecks(_ resolution: Resolution) throws {
         try self.authority.validateChecks(resolution, .block(0))
@@ -202,7 +203,7 @@ extension Policy {
             if try resolution.checkQueryIf(query, trusted) {
                 switch self.kind.wrapped {
                 case .allow:
-                    return Biscuit.Authorization(policy: self)
+                    return Biscuit.Authorization(policy: self, resolution: resolution)
                 case .deny:
                     throw Biscuit.AuthorizationError(deny: self)
                 }
