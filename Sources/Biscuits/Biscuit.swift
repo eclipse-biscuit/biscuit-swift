@@ -468,7 +468,7 @@ public struct Biscuit: Sendable, Hashable {
         limitedBy: Authorizer.Limits = Authorizer.Limits.noLimits
     ) throws -> Bool {
         let resolution = try Resolution(biscuit: self, authorizer: Authorizer(limits: limitedBy))
-        return try check.validate(resolution, [0], .authorizer)
+        return try check.validate(resolution, [0], nil)
     }
 
     /// Query the biscuit to check if a certain statement holds true
