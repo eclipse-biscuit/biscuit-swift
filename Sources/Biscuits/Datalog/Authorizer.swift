@@ -4,18 +4,18 @@
  */
 extension Biscuit {
     func validateChecks(_ resolution: Resolution) throws {
-        try self.authority.validateChecks(resolution, .block(0))
+        try self.authority.validateChecks(resolution, 0)
         for (index, block) in self.attenuations.enumerated() {
-            try block.validateChecks(resolution, .block(index + 1))
+            try block.validateChecks(resolution, index + 1)
         }
     }
 }
 
 extension Biscuit.Block {
-    func validateChecks(_ resolution: Resolution, _ scope: Resolution.Scope) throws {
-        let trusted = resolution.trustScopes(self.datalog.trusted, scope.blockID)
+    func validateChecks(_ resolution: Resolution, _ blockID: Int) throws {
+        let trusted = resolution.trustScopes(self.datalog.trusted, blockID)
         for check in self.datalog.checks {
-            guard try check.validate(resolution, trusted, scope) else {
+            guard try check.validate(resolution, trusted, blockID) else {
                 throw Biscuit.AuthorizationError(check: check)
             }
         }
@@ -146,7 +146,7 @@ extension Biscuit {
 
         func validateChecksAndPolicies(_ resolution: Resolution) throws -> Biscuit.Authorization {
             for check in self.checks {
-                guard try check.validate(resolution, [0], .authorizer) else {
+                guard try check.validate(resolution, [0], nil) else {
                     throw Biscuit.AuthorizationError(check: check)
                 }
             }
@@ -170,13 +170,13 @@ extension Biscuit {
 }
 
 extension Check {
-    func validate(_ resolution: Resolution, _ trusted: Set<Int>, _ scope: Resolution.Scope) throws -> Bool {
+    func validate(_ resolution: Resolution, _ trusted: Set<Int>, _ blockID: Int?) throws -> Bool {
         for query in self.queries {
             let trusted =
                 if query.trusted.isEmpty {
                     trusted
                 } else {
-                    resolution.trustScopes(query.trusted, scope.blockID)
+                    resolution.trustScopes(query.trusted, blockID)
                 }
             let checkSucceeded =
                 switch self.kind.wrapped {
