@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.1
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -15,6 +15,10 @@ let package = Package(
     ],
     products: [
         .library(name: "Biscuits", targets: ["Biscuits"]),
+    ],
+    traits: [
+        .trait(name: "Regex", description: "Support the `matches` operator using Swift Regex"),
+        .default(enabledTraits: ["Regex"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0" ..< "5.0.0"),

@@ -288,6 +288,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test009_expired_token")
     }
 
+    #if Regex
     func testRegexConstraint() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
@@ -424,6 +425,7 @@ final class GenerationTests: XCTestCase {
         }
         try compareBiscuit(biscuit, with: "test017_expressions")
     }
+    #endif
 
     func testParsing() throws {
         let biscuit = try Biscuit(

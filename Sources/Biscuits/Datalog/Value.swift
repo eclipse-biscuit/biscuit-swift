@@ -347,10 +347,12 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
         self.expression.endsWith(rhs)
     }
 
+    #if Regex
     /// A matches expression
     public func matches<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {
         self.expression.matches(rhs)
     }
+    #endif
 
     /// A set intersection expression
     public func intersection<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {
@@ -615,10 +617,14 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     }
 
     func opRegex(_ rhs: Value) throws -> Value {
+        #if Regex
         switch (self.wrapped, rhs.wrapped) {
         case (.string(let x), .string(let y)): return try Value(x.contains(Regex(y)))
         default: throw Biscuit.EvaluationError.typeError
         }
+        #else
+        throw Biscuit.EvaluationError.regexUnsupported
+        #endif
     }
 
     func opGet(_ rhs: Value) throws -> Value {

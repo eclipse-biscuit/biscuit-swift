@@ -204,10 +204,12 @@ public struct Term: TermConvertible, ExpressionConvertible, Sendable, Hashable, 
         self.expression.endsWith(rhs)
     }
 
+    #if Regex
     /// A matches expression
     public func matches<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {
         self.expression.matches(rhs)
     }
+    #endif
 
     /// A set intersection expression
     public func intersection<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {

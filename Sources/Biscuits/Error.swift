@@ -87,6 +87,7 @@ extension Biscuit {
             case closureEvaluatedToClosure
             case tooManyFacts
             case tooManyIterations
+            case regexUnsupported
         }
         let code: ErrorCode
 
@@ -108,6 +109,7 @@ extension Biscuit {
         static var closureEvaluatedToClosure: Self { Self(.closureEvaluatedToClosure) }
         static var tooManyFacts: Self { Self(.tooManyFacts) }
         static var tooManyIterations: Self { Self(.tooManyIterations) }
+        static var regexUnsupported: Self { Self(.regexUnsupported) }
 
         static func unknownForeignFunction(_ name: String) -> Self {
             Self(.unknownForeignFunction(name))
@@ -130,6 +132,7 @@ extension Biscuit {
             case .closureEvaluatedToClosure: "closure evaluated to closure"
             case .tooManyFacts: "evaluating biscuit produced too many facts"
             case .tooManyIterations: "evaluating biscuit required too many iterations"
+            case .regexUnsupported: "regular expressions are not supported in this build"
             }
         }
     }
