@@ -447,7 +447,9 @@ struct Parser {
                 case "get": .binary(.get)
                 case "intersection": .binary(.intersection)
                 case "length": .unary(.length)
+                #if Regex
                 case "matches": .binary(.regex)
+                #endif
                 case "starts_with": .binary(.startsWith)
                 case "try_or": .tryOr
                 case "type": .unary(.typeOf)

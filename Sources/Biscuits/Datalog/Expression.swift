@@ -167,10 +167,12 @@ public struct Expression: ExpressionConvertible, Sendable, Hashable, CustomStrin
         Expression(op: .endsWith, lhs: self, rhs: rhs.expression)
     }
 
+    #if Regex
     /// A matches expression
     public func matches<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {
         Expression(op: .regex, lhs: self, rhs: rhs.expression)
     }
+    #endif
 
     /// A set intersection expression
     public func intersection<Rhs: ExpressionConvertible>(_ rhs: Rhs) -> Expression {
