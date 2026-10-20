@@ -15,7 +15,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     enum Wrapped: Hashable {
         case integer(Int64)
         case string(String)
-        case date(Date)
+        case date(UInt64)
         case bytes(Data)
         case bool(Bool)
         case set(Set<Value>)
@@ -37,7 +37,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
 
     /// A date Value
     public init(_ date: Date) {
-        self.wrapped = .date(date)
+        self.wrapped = .date(UInt64(date.timeIntervalSince1970))
     }
 
     /// A byte array Value
@@ -186,7 +186,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
             switch proto.content {
             case .integer(let i): .integer(i)
             case .string(let s): try .string(interner.lookupSymbol(s))
-            case .date(let d): .date(Date(timeIntervalSince1970: TimeInterval(d)))
+            case .date(let d): .date(d)
             case .bytes(let b): .bytes(b)
             case .bool(let b): .bool(b)
             case .set(let terms):
@@ -388,7 +388,7 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
         case .integer(let i): proto.integer = Int64(i)
         case .string(let string):
             proto.string = UInt64(interner.intern(string, &locals))
-        case .date(let d): proto.date = UInt64(d.timeIntervalSince1970)
+        case .date(let d): proto.date = d
         case .bytes(let b): proto.bytes = b
         case .bool(let b): proto.bool = b
         case .set(let set):
