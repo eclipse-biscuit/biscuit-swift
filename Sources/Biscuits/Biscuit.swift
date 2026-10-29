@@ -124,7 +124,7 @@ public struct Biscuit: Sendable, Hashable {
             throw ValidationError.missingAuthority
         }
         if proto.hasRootKeyID {
-            self.rootKeyID = RootKeyID(rawValue: proto.rootKeyID)
+            self.rootKeyID = RootKeyID(proto.rootKeyID)
         } else {
             self.rootKeyID = nil
         }
@@ -437,8 +437,9 @@ public struct Biscuit: Sendable, Hashable {
             self.rawValue = UInt32(bitPattern: Int32(truncatingIfNeeded: value))
         }
 
-        init(rawValue: UInt32) {
-            self.rawValue = rawValue
+        /// Initialize a root key ID from a UInt32
+        public init(_ value: UInt32) {
+            self.rawValue = value
         }
 
         /// The integer value of this root key
