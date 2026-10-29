@@ -1,3 +1,9 @@
+# `2.1.0`
+
+- Add a constructor for `RootKeyID` from `UInt32`
+- Add support for maximum steps to `RunLimits`
+- Use a `UInt64` as the internal representation of dates
+
 # `2.0.1`
 
 - Fix bug in base64url decoding: now accept base64url data with or without padding bytes
