@@ -123,7 +123,12 @@ enum OpBinary: Sendable, Hashable {
         return proto
     }
 
-    func evaluate(_ arg1: StackElement, _ arg2: StackElement, _ variables: [String: Value]) throws -> Value {
+    func evaluate(
+        _ arg1: StackElement,
+        _ arg2: StackElement,
+        _ variables: [String: Value],
+        _ steps: inout StepCounter
+    ) throws -> Value {
         switch (self, arg1, arg2) {
         case (.lt, .value(let x), .value(let y)): return try x.opLt(y)
         case (.gt, .value(let x), .value(let y)): return try x.opGt(y)
@@ -147,14 +152,14 @@ enum OpBinary: Sendable, Hashable {
         case (.union, .value(let x), .value(let y)): return try x.opUnion(y)
         case (.regex, .value(let x), .value(let y)): return try x.opRegex(y)
         case (.get, .value(let x), .value(let y)): return try x.opGet(y)
-        case (.any, .value(let x), .closure(let f)): return try x.opAny(f, variables)
-        case (.all, .value(let x), .closure(let f)): return try x.opAll(f, variables)
+        case (.any, .value(let x), .closure(let f)): return try x.opAny(f, variables, &steps)
+        case (.all, .value(let x), .closure(let f)): return try x.opAll(f, variables, &steps)
         case (.and, .value(let x), .value(let y)): return try x.opAnd(y)
         case (.or, .value(let x), .value(let y)): return try x.opOr(y)
-        case (.lazyAnd, .value(let x), .closure(let f)): return try x.opLazyAnd(f, variables)
-        case (.lazyOr, .value(let x), .closure(let f)): return try x.opLazyOr(f, variables)
+        case (.lazyAnd, .value(let x), .closure(let f)): return try x.opLazyAnd(f, variables, &steps)
+        case (.lazyOr, .value(let x), .closure(let f)): return try x.opLazyOr(f, variables, &steps)
         case (.ffi(let name), _, _): throw Biscuit.EvaluationError.unknownForeignFunction(name)
-        case (.tryOr, .closure(let f), .value(let y)): return try f.opTryOr(y, variables)
+        case (.tryOr, .closure(let f), .value(let y)): return try f.opTryOr(y, variables, &steps)
         default: throw Biscuit.EvaluationError.typeError
         }
     }

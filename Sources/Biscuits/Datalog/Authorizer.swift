@@ -3,19 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 extension Biscuit {
-    func validateChecks(_ resolution: Resolution) throws {
-        try self.authority.validateChecks(resolution, 0)
+    func validateChecks(_ resolution: Resolution, _ steps: inout StepCounter) throws {
+        try self.authority.validateChecks(resolution, 0, &steps)
         for (index, block) in self.attenuations.enumerated() {
-            try block.validateChecks(resolution, index + 1)
+            try block.validateChecks(resolution, index + 1, &steps)
         }
     }
 }
 
 extension Biscuit.Block {
-    func validateChecks(_ resolution: Resolution, _ blockID: Int) throws {
+    func validateChecks(_ resolution: Resolution, _ blockID: Int, _ steps: inout StepCounter) throws {
         let trusted = resolution.trustScopes(self.datalog.trusted, blockID)
         for check in self.datalog.checks {
-            guard try check.validate(resolution, trusted, blockID) else {
+            guard try check.validate(resolution, trusted, blockID, &steps) else {
                 throw Biscuit.AuthorizationError(check: check)
             }
         }
@@ -45,6 +45,8 @@ extension Biscuit {
             public var maximumFacts: Int? = nil
             /// The maximum number of iterations to perform during authorization
             public var maximumIterations: Int? = nil
+            /// The maximum number of steps to perform during authorization
+            public var maximumSteps: Int? = nil
             /// Allow authorization without limiting execution time
             public static var noLimits: Limits { Limits() }
         }
@@ -144,14 +146,17 @@ extension Biscuit {
             return auth
         }
 
-        func validateChecksAndPolicies(_ resolution: Resolution) throws -> Biscuit.Authorization {
+        func validateChecksAndPolicies(
+            _ resolution: Resolution,
+            _ steps: inout StepCounter
+        ) throws -> Biscuit.Authorization {
             for check in self.checks {
-                guard try check.validate(resolution, [0], nil) else {
+                guard try check.validate(resolution, [0], nil, &steps) else {
                     throw Biscuit.AuthorizationError(check: check)
                 }
             }
             for policy in self.policies {
-                if let authorization = try policy.validate(resolution) {
+                if let authorization = try policy.validate(resolution, &steps) {
                     return authorization
                 }
             }
@@ -170,7 +175,12 @@ extension Biscuit {
 }
 
 extension Check {
-    func validate(_ resolution: Resolution, _ trusted: Set<Int>, _ blockID: Int?) throws -> Bool {
+    func validate(
+        _ resolution: Resolution,
+        _ trusted: Set<Int>,
+        _ blockID: Int?,
+        _ steps: inout StepCounter
+    ) throws -> Bool {
         for query in self.queries {
             let trusted =
                 if query.trusted.isEmpty {
@@ -181,11 +191,11 @@ extension Check {
             let checkSucceeded =
                 switch self.kind.wrapped {
                 case .one:
-                    try resolution.checkQueryIf(query, trusted)
+                    try resolution.checkQueryIf(query, trusted, &steps)
                 case .all:
-                    try resolution.checkQueryAll(query, trusted)
+                    try resolution.checkQueryAll(query, trusted, &steps)
                 case .reject:
-                    try !resolution.checkQueryIf(query, trusted)
+                    try !resolution.checkQueryIf(query, trusted, &steps)
                 }
             if checkSucceeded {
                 return true
@@ -196,10 +206,10 @@ extension Check {
 }
 
 extension Policy {
-    func validate(_ resolution: Resolution) throws -> Biscuit.Authorization? {
+    func validate(_ resolution: Resolution, _ steps: inout StepCounter) throws -> Biscuit.Authorization? {
         for query in self.queries {
             let trusted = resolution.trustScopes(query.trusted, nil)
-            if try resolution.checkQueryIf(query, trusted) {
+            if try resolution.checkQueryIf(query, trusted, &steps) {
                 switch self.kind.wrapped {
                 case .allow:
                     return Biscuit.Authorization(policy: self)

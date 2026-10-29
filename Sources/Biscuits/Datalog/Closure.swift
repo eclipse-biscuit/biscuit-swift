@@ -29,22 +29,22 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
         self.ops = ops
     }
 
-    func opTryOr(_ alternative: Value, _ variables: [String: Value]) throws -> Value {
+    func opTryOr(_ alternative: Value, _ variables: [String: Value], _ steps: inout StepCounter) throws -> Value {
         do {
-            return try self.evaluate(variables)
+            return try self.evaluate(variables, &steps)
         } catch let e as Biscuit.EvaluationError where e == Biscuit.EvaluationError.typeError {
             return alternative
         }
     }
 
-    func evaluate(_ variables: [String: Value]) throws -> Value {
+    func evaluate(_ variables: [String: Value], _ steps: inout StepCounter) throws -> Value {
         guard params.count == 0 else {
             throw Biscuit.EvaluationError.wrongArity
         }
-        return try self.evaluateInner(variables)
+        return try self.evaluateInner(variables, &steps)
     }
 
-    func evaluate(_ arg: Value, _ variables: [String: Value]) throws -> Value {
+    func evaluate(_ arg: Value, _ variables: [String: Value], _ steps: inout StepCounter) throws -> Value {
         guard params.count == 1 else {
             throw Biscuit.EvaluationError.wrongArity
         }
@@ -53,12 +53,13 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
         }
         var variables = variables
         variables[params[0]] = arg
-        return try self.evaluateInner(variables)
+        return try self.evaluateInner(variables, &steps)
     }
 
-    func evaluateInner(_ variables: [String: Value]) throws -> Value {
+    func evaluateInner(_ variables: [String: Value], _ steps: inout StepCounter) throws -> Value {
         var stack: [StackElement] = []
         for op in self.ops {
+            try steps.step()
             switch op {
             case .value(let term):
                 try stack.append(StackElement(term, variables))
@@ -74,7 +75,7 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
                 guard let arg1 = stack.popLast() else {
                     throw Biscuit.EvaluationError.invalidBinaryOp
                 }
-                try stack.append(.value(op.evaluate(arg1, arg2, variables)))
+                try stack.append(.value(op.evaluate(arg1, arg2, variables, &steps)))
             case .closure(let closure):
                 stack.append(.closure(closure))
             }

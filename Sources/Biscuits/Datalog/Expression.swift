@@ -204,9 +204,10 @@ public struct Expression: ExpressionConvertible, Sendable, Hashable, CustomStrin
         Expression(op: .tryOr, lhs: Closure(body: self), rhs: rhs.expression)
     }
 
-    func evaluate(_ variables: [String: Value]) throws -> Bool {
+    func evaluate(_ variables: [String: Value], _ steps: inout StepCounter) throws -> Bool {
         var stack: [StackElement] = []
         for op in self.ops {
+            try steps.step()
             switch op {
             case .value(let term):
                 try stack.append(StackElement(term, variables))
@@ -222,7 +223,7 @@ public struct Expression: ExpressionConvertible, Sendable, Hashable, CustomStrin
                 guard let arg1 = stack.popLast() else {
                     throw Biscuit.EvaluationError.invalidBinaryOp
                 }
-                try stack.append(.value(op.evaluate(arg1, arg2, variables)))
+                try stack.append(.value(op.evaluate(arg1, arg2, variables, &steps)))
             case .closure(let closure):
                 stack.append(.closure(closure))
             }

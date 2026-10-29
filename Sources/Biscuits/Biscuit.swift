@@ -390,9 +390,10 @@ public struct Biscuit: Sendable, Hashable {
     /// `EvaluationError` if the biscuit or the authorizer cannot be evaluated
     @discardableResult
     public func authorize(using authorizer: Authorizer) throws -> Authorization {
-        let facts = try Resolution(biscuit: self, authorizer: authorizer)
-        try self.validateChecks(facts)
-        return try authorizer.validateChecksAndPolicies(facts)
+        var steps = StepCounter(remaining: authorizer.limits.maximumSteps)
+        let facts = try Resolution(biscuit: self, authorizer: authorizer, &steps)
+        try self.validateChecks(facts, &steps)
+        return try authorizer.validateChecksAndPolicies(facts, &steps)
     }
 
     /// Serialize this Biscuit to its data representation
@@ -467,8 +468,10 @@ public struct Biscuit: Sendable, Hashable {
         using check: Check,
         limitedBy: Authorizer.Limits = Authorizer.Limits.noLimits
     ) throws -> Bool {
-        let resolution = try Resolution(biscuit: self, authorizer: Authorizer(limits: limitedBy))
-        return try check.validate(resolution, [0], nil)
+        let authorizer = Authorizer(limits: limitedBy)
+        var steps = StepCounter(remaining: authorizer.limits.maximumSteps)
+        let resolution = try Resolution(biscuit: self, authorizer: authorizer, &steps)
+        return try check.validate(resolution, [0], nil, &steps)
     }
 
     /// Query the biscuit to check if a certain statement holds true

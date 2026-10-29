@@ -10,7 +10,7 @@ struct Resolution {
 
     typealias Scope = Set<Int>
 
-    init(biscuit: Biscuit, authorizer: Biscuit.Authorizer) throws {
+    init(biscuit: Biscuit, authorizer: Biscuit.Authorizer, _ steps: inout StepCounter) throws {
         var factCount = 0
         let authority = biscuit.authority
         factCount += try authority.addFacts(to: &self, in: 0)
@@ -25,15 +25,16 @@ struct Resolution {
 
         var iterationCount = 0
         while !self.recent.isEmpty {
-            try self.applyRules(authority.datalog.rules, authority.datalog.trusted, 0)
+            try self.applyRules(authority.datalog.rules, authority.datalog.trusted, 0, &steps)
             for (index, block) in biscuit.attenuations.enumerated() {
                 try self.applyRules(
                     block.datalog.rules,
                     block.datalog.trusted,
-                    index + 1
+                    index + 1,
+                    &steps
                 )
             }
-            try self.applyRules(authorizer.rules, [], nil)
+            try self.applyRules(authorizer.rules, [], nil, &steps)
             self.stable.formUnion(self.recent)
             self.recent = self.new
             self.new = Facts()
@@ -48,21 +49,29 @@ struct Resolution {
         }
     }
 
-    mutating func applyRules(_ rules: [Rule], _ trusted: [TrustedScope], _ blockID: Int?) throws {
+    mutating func applyRules(
+        _ rules: [Rule],
+        _ trusted: [TrustedScope],
+        _ blockID: Int?,
+        _ steps: inout StepCounter
+    ) throws {
         let trusted = self.trustScopes(trusted, blockID)
         for rule in rules {
             let trusted = rule.trusted.isEmpty ? trusted : self.trustScopes(rule.trusted, blockID)
-            try self.applyRule(rule, blockID, trusted)
+            try self.applyRule(rule, blockID, trusted, &steps)
         }
     }
 
-    mutating func applyRule(_ rule: Rule, _ blockID: Int?, _ trusted: Scope) throws {
+    mutating func applyRule(_ rule: Rule, _ blockID: Int?, _ trusted: Scope, _ steps: inout StepCounter) throws {
         let origin = Match(blockID.map { Scope([$0]) } ?? [])
         for predicate in rule.bodyPredicates {
             for match in self.recent.matches(predicate, trusted, origin) {
+                try steps.step()
                 let predicates = rule.bodyPredicates.filter { $0 != predicate }
-                for match in self.collectAllVariables(predicates[...], trusted, match) {
-                    if try rule.expressions.allSatisfy({ expr in try expr.evaluate(match.variables) }) {
+                for match in try self.collectAllVariables(predicates[...], trusted, match, &steps) {
+                    if try rule.expressions.allSatisfy({
+                        expr in try expr.evaluate(match.variables, &steps)
+                    }) {
                         let fact = try rule.head.makeConcrete(variables: match.variables)
                         self.addFact(fact, match.scope)
                     }
@@ -71,19 +80,19 @@ struct Resolution {
         }
     }
 
-    func checkQueryIf(_ query: Biscuit.Query, _ trusted: Scope) throws -> Bool {
+    func checkQueryIf(_ query: Biscuit.Query, _ trusted: Scope, _ steps: inout StepCounter) throws -> Bool {
         var success = false
-        for match in self.collectStableVariables(query.predicates[...], trusted, Match()) {
-            success = try query.expressions.allSatisfy({ try $0.evaluate(match.variables) })
+        for match in try self.collectStableVariables(query.predicates[...], trusted, Match(), &steps) {
+            success = try query.expressions.allSatisfy({ try $0.evaluate(match.variables, &steps) })
             if success { break }
         }
         return success
     }
 
-    func checkQueryAll(_ query: Biscuit.Query, _ trusted: Scope) throws -> Bool {
+    func checkQueryAll(_ query: Biscuit.Query, _ trusted: Scope, _ steps: inout StepCounter) throws -> Bool {
         var success = false
-        for match in self.collectStableVariables(query.predicates[...], trusted, Match()) {
-            success = try query.expressions.allSatisfy({ try $0.evaluate(match.variables) })
+        for match in try self.collectStableVariables(query.predicates[...], trusted, Match(), &steps) {
+            success = try query.expressions.allSatisfy({ try $0.evaluate(match.variables, &steps) })
             guard success else { break }
         }
         return success
@@ -92,24 +101,28 @@ struct Resolution {
     func collectStableVariables(
         _ predicates: ArraySlice<Predicate>,
         _ trusted: Scope,
-        _ match: Match
-    ) -> [Match] {
+        _ match: Match,
+        _ steps: inout StepCounter
+    ) throws -> [Match] {
         guard !predicates.isEmpty else { return [match] }
         let start = predicates.startIndex
-        return self.stable.matches(predicates[start], trusted, match).flatMap {
-            self.collectStableVariables(predicates[(start + 1)...], trusted, $0)
+        return try self.stable.matches(predicates[start], trusted, match).flatMap {
+            try steps.step()
+            return try self.collectStableVariables(predicates[(start + 1)...], trusted, $0, &steps)
         }
     }
 
     func collectAllVariables(
         _ predicates: ArraySlice<Predicate>,
         _ trusted: Scope,
-        _ match: Match
-    ) -> [Match] {
+        _ match: Match,
+        _ steps: inout StepCounter
+    ) throws -> [Match] {
         guard !predicates.isEmpty else { return [match] }
         let start = predicates.startIndex
-        return self.allFactsThatSupport(predicates[start], trusted, match).flatMap {
-            self.collectAllVariables(predicates[(start + 1)...], trusted, $0)
+        return try self.allFactsThatSupport(predicates[start], trusted, match).flatMap {
+            try steps.step()
+            return try self.collectAllVariables(predicates[(start + 1)...], trusted, $0, &steps)
         }
     }
 

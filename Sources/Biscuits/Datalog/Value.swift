@@ -639,20 +639,22 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
         }
     }
 
-    func opAny(_ f: Closure, _ vars: [String: Value]) throws -> Value {
+    func opAny(_ f: Closure, _ vars: [String: Value], _ steps: inout StepCounter) throws -> Value {
         switch self.wrapped {
-        case .set(let x): return try x.contains { try f.evaluate($0, vars) == true.value }.value
-        case .array(let x): return try x.contains { try f.evaluate($0, vars) == true.value }.value
-        case .map(let x): return try x.contains { try f.evaluate(Value.array($0, $1), vars) == true.value }.value
+        case .set(let x): return try x.contains { try f.evaluate($0, vars, &steps) == true.value }.value
+        case .array(let x): return try x.contains { try f.evaluate($0, vars, &steps) == true.value }.value
+        case .map(let x):
+            return try x.contains { try f.evaluate(Value.array($0, $1), vars, &steps) == true.value }.value
         default: throw Biscuit.EvaluationError.typeError
         }
     }
 
-    func opAll(_ f: Closure, _ vars: [String: Value]) throws -> Value {
+    func opAll(_ f: Closure, _ vars: [String: Value], _ steps: inout StepCounter) throws -> Value {
         switch self.wrapped {
-        case .set(let x): return try x.allSatisfy { try f.evaluate($0, vars) == true.value }.value
-        case .array(let x): return try x.allSatisfy { try f.evaluate($0, vars) == true.value }.value
-        case .map(let x): return try x.allSatisfy { try f.evaluate(Value.array($0, $1), vars) == true.value }.value
+        case .set(let x): return try x.allSatisfy { try f.evaluate($0, vars, &steps) == true.value }.value
+        case .array(let x): return try x.allSatisfy { try f.evaluate($0, vars, &steps) == true.value }.value
+        case .map(let x):
+            return try x.allSatisfy { try f.evaluate(Value.array($0, $1), vars, &steps) == true.value }.value
         default: throw Biscuit.EvaluationError.typeError
         }
     }
@@ -671,24 +673,24 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
         return Value(x || y)
     }
 
-    func opLazyAnd(_ f: Closure, _ vars: [String: Value]) throws -> Value {
+    func opLazyAnd(_ f: Closure, _ vars: [String: Value], _ steps: inout StepCounter) throws -> Value {
         guard case .bool(let x) = self.wrapped else {
             throw Biscuit.EvaluationError.typeError
         }
         guard x else { return false.value }
-        let value = try f.evaluate(vars)
+        let value = try f.evaluate(vars, &steps)
         guard case .bool = value.wrapped else {
             throw Biscuit.EvaluationError.typeError
         }
         return value
     }
 
-    func opLazyOr(_ f: Closure, _ vars: [String: Value]) throws -> Value {
+    func opLazyOr(_ f: Closure, _ vars: [String: Value], _ steps: inout StepCounter) throws -> Value {
         guard case .bool(let x) = self.wrapped else {
             throw Biscuit.EvaluationError.typeError
         }
         guard !x else { return true.value }
-        let value = try f.evaluate(vars)
+        let value = try f.evaluate(vars, &steps)
         guard case .bool = value.wrapped else {
             throw Biscuit.EvaluationError.typeError
         }
