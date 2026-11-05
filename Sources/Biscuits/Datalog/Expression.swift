@@ -12,8 +12,15 @@ import Foundation
 public struct Expression: ExpressionConvertible, Sendable, Hashable, CustomStringConvertible {
     let ops: [Op]
 
-    init(proto: Biscuit_Format_Schema_Expression, interner: InternmentTable) throws {
-        self.ops = try proto.ops.map { try Op(proto: $0, interner: interner) }
+    init(
+        proto: Biscuit_Format_Schema_Expression,
+        interner: InternmentTable,
+        allowList: Biscuit.AllowList.PerBlock
+    ) throws {
+        var remainingOps = allowList.maximumOpsPerExpression
+        self.ops = try proto.ops.map {
+            try Op(proto: $0, interner: interner, allowList: allowList, remainingOps: &remainingOps)
+        }
     }
 
     init(term: Term) {
@@ -260,13 +267,27 @@ enum Op: Sendable, Hashable {
     case binary(OpBinary)
     case closure(Closure)
 
-    init(proto: Biscuit_Format_Schema_Op, interner: InternmentTable) throws {
+    init(
+        proto: Biscuit_Format_Schema_Op,
+        interner: InternmentTable,
+        allowList: Biscuit.AllowList.PerBlock,
+        remainingOps: inout Int
+    ) throws {
+        guard remainingOps > 0 else {
+            throw Biscuit.AllowListError.tooManyOps
+        }
+        remainingOps -= 1
         self =
             switch proto.content {
-            case .value(let term): try .value(Term(proto: term, interner: interner))
-            case .unary(let op_unary): try .unary(OpUnary(proto: op_unary, interner: interner))
-            case .binary(let op_binary): try .binary(OpBinary(proto: op_binary, interner: interner))
-            case .closure(let op_closure): try .closure(Closure(proto: op_closure, interner: interner))
+            case .value(let term): try .value(Term(proto: term, interner: interner, allowList: allowList))
+            case .unary(let op_unary): try .unary(OpUnary(proto: op_unary, interner: interner, allowList: allowList))
+            case .binary(let op_binary):
+                try .binary(OpBinary(proto: op_binary, interner: interner, allowList: allowList))
+            case .closure where !allowList.allowClosures: throw Biscuit.AllowListError.closuresNotAllowed
+            case .closure(let op_closure):
+                try .closure(
+                    Closure(proto: op_closure, interner: interner, allowList: allowList, remainingOps: &remainingOps)
+                )
             case .none: throw Biscuit.ValidationError.missingOp
             }
     }

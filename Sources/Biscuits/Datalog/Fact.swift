@@ -45,12 +45,23 @@ public struct Fact: Sendable, Hashable, CustomStringConvertible {
         self.values = [index.value, revocationID.value]
     }
 
-    init(proto: Biscuit_Format_Schema_Predicate, interner: InternmentTable) throws {
+    init(
+        proto: Biscuit_Format_Schema_Predicate,
+        interner: InternmentTable,
+        allowList: Biscuit.AllowList.PerBlock
+    ) throws {
         guard proto.hasName else {
             throw Biscuit.ValidationError.missingPredicate
         }
-        self.name = try interner.lookupSymbol(proto.name)
-        self.values = try proto.terms.map { try Value(proto: $0, interner: interner) }
+        guard proto.terms.count <= allowList.maximumTermsPerPredicate else {
+            throw Biscuit.AllowListError.tooManyTerms
+        }
+        let name = try interner.lookupSymbol(proto.name)
+        guard name.utf8.count <= allowList.maximumNameLength else {
+            throw Biscuit.AllowListError.nameTooLong
+        }
+        self.name = name
+        self.values = try proto.terms.map { try Value(proto: $0, interner: interner, allowList: allowList) }
     }
 
     func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_Fact {

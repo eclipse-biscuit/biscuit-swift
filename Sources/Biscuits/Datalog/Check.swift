@@ -113,8 +113,7 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
         self.queries = queries
     }
 
-    init(proto: Biscuit_Format_Schema_Check, interner: InternmentTable) throws {
-        self.queries = try proto.queries.map { try Biscuit.Query(proto: $0, interner: interner) }
+    init(proto: Biscuit_Format_Schema_Check, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws {
         if proto.hasKind {
             self._kind =
                 switch proto.kind {
@@ -124,6 +123,17 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
                 }
         } else {
             self._kind = nil
+        }
+        if let allowedKinds = allowList.allowedCheckKinds {
+            guard allowedKinds.contains(self._kind ?? .checkIf) else {
+                throw Biscuit.AllowListError.checkKindNotAllowed
+            }
+        }
+        guard proto.queries.count <= allowList.maximumQueriesPerCheck else {
+            throw Biscuit.AllowListError.tooManyQueries
+        }
+        self.queries = try proto.queries.map {
+            try Biscuit.Query(proto: $0, interner: interner, allowList: allowList)
         }
     }
 

@@ -28,12 +28,16 @@ public struct Term: TermConvertible, ExpressionConvertible, Sendable, Hashable, 
         self.wrapped = .value(value.value)
     }
 
-    init(proto: Biscuit_Format_Schema_Term, interner: InternmentTable) throws {
-        self.wrapped =
-            switch proto.content {
-            case .variable(let v): try .variable(interner.lookupSymbol(v))
-            default: try .value(Value(proto: proto, interner: interner))
+    init(proto: Biscuit_Format_Schema_Term, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws {
+        switch proto.content {
+        case .variable(let v):
+            let name = try interner.lookupSymbol(v)
+            guard name.utf8.count <= allowList.maximumNameLength else {
+                throw Biscuit.AllowListError.nameTooLong
             }
+            self.wrapped = .variable(name)
+        default: self.wrapped = try .value(Value(proto: proto, interner: interner, allowList: allowList))
+        }
     }
 
     func intern(_ interner: inout InternmentTable, _ locals: inout [String]) -> Biscuit_Format_Schema_Term {

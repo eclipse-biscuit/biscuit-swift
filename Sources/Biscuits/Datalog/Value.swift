@@ -25,6 +25,64 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
     }
     var wrapped: Wrapped
 
+    /// The kind of a Value
+    public struct Kind: Sendable, Hashable, CustomStringConvertible {
+        enum Wrapped: Hashable { case integer, string, date, bytes, bool, set, null, array, map }
+        let wrapped: Wrapped
+
+        init?(content: Biscuit_Format_Schema_Term.OneOf_Content?) {
+            switch content {
+            case .integer: self.wrapped = .integer
+            case .string: self.wrapped = .string
+            case .date: self.wrapped = .date
+            case .bytes: self.wrapped = .bytes
+            case .bool: self.wrapped = .bool
+            case .set: self.wrapped = .set
+            case .null: self.wrapped = .null
+            case .array: self.wrapped = .array
+            case .map: self.wrapped = .map
+            case .variable, .none: return nil
+            }
+        }
+
+        init(wrapped: Wrapped) {
+            self.wrapped = wrapped
+        }
+
+        /// The kind of an integer Value
+        public static var integer: Kind { Kind(wrapped: .integer) }
+        /// The kind of a string Value
+        public static var string: Kind { Kind(wrapped: .string) }
+        /// The kind of a date Value
+        public static var date: Kind { Kind(wrapped: .date) }
+        /// The kind of a bytes Value
+        public static var bytes: Kind { Kind(wrapped: .bytes) }
+        /// The kind of a boolean Value
+        public static var bool: Kind { Kind(wrapped: .bool) }
+        /// The kind of a set Value
+        public static var set: Kind { Kind(wrapped: .set) }
+        /// The kind of a null Value
+        public static var null: Kind { Kind(wrapped: .null) }
+        /// The kind of an array Value
+        public static var array: Kind { Kind(wrapped: .array) }
+        /// The kind of a map Value
+        public static var map: Kind { Kind(wrapped: .map) }
+
+        public var description: String {
+            switch self.wrapped {
+            case .integer: "integer"
+            case .string: "string"
+            case .date: "date"
+            case .bytes: "bytes"
+            case .bool: "bool"
+            case .set: "set"
+            case .null: "null"
+            case .array: "array"
+            case .map: "map"
+            }
+        }
+    }
+
     /// An integer Value
     public init(_ integer: Int) {
         self.wrapped = .integer(Int64(integer))
@@ -181,45 +239,70 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
         self.wrapped = wrapped
     }
 
-    init(proto: Biscuit_Format_Schema_Term, interner: InternmentTable) throws {
-        self.wrapped =
-            switch proto.content {
-            case .integer(let i): .integer(i)
-            case .string(let s): try .string(interner.lookupSymbol(s))
-            case .date(let d): .date(d)
-            case .bytes(let b): .bytes(b)
-            case .bool(let b): .bool(b)
-            case .set(let terms):
-                try .set(
-                    Set(
-                        terms.set.map {
-                            let value = try Value(proto: $0, interner: interner)
-                            if case .set = value.wrapped {
-                                throw Biscuit.ValidationError.setInSet
-                            }
-                            return value
-                        }
-                    )
-                )
-            case .array(let terms): try .array(terms.array.map { try Value(proto: $0, interner: interner) })
-            case .map(let terms):
-                try .map(
-                    Dictionary(
-                        terms.entries.map {
-                            let key = try MapKey(proto: $0.key, interner: interner)
-                            let val = try Value(proto: $0.value, interner: interner)
-                            return (key, val)
-                        },
-                        uniquingKeysWith: { v1, v2 in
-                            guard v1 == v2 else { throw Biscuit.ValidationError.duplicateMapKey }
-                            return v1
-                        }
-                    )
-                )
-            case .null: .null
-            case .variable: throw Biscuit.ValidationError.variableInFact
-            case .none: throw Biscuit.ValidationError.missingTerm
+    init(proto: Biscuit_Format_Schema_Term, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws {
+        if let allowedKinds = allowList.allowedTermTypes, let kind = Kind(content: proto.content) {
+            guard allowedKinds.contains(kind) else {
+                throw Biscuit.AllowListError.termTypeNotAllowed
             }
+        }
+        switch proto.content {
+        case .integer(let i): self.wrapped = .integer(i)
+        case .string(let s):
+            let string = try interner.lookupSymbol(s)
+            guard string.utf8.count <= allowList.maximumStringLength else {
+                throw Biscuit.AllowListError.stringTooLong
+            }
+            self.wrapped = .string(string)
+        case .date(let d): self.wrapped = .date(d)
+        case .bytes(let b):
+            guard b.count <= allowList.maximumBytesLength else {
+                throw Biscuit.AllowListError.bytesTooLong
+            }
+            self.wrapped = .bytes(b)
+        case .bool(let b): self.wrapped = .bool(b)
+        case .set(let terms):
+            guard terms.set.count <= allowList.maximumSetLength else {
+                throw Biscuit.AllowListError.setTooLong
+            }
+            self.wrapped = try .set(
+                Set(
+                    terms.set.map {
+                        let value = try Value(proto: $0, interner: interner, allowList: allowList)
+                        if case .set = value.wrapped {
+                            throw Biscuit.ValidationError.setInSet
+                        }
+                        return value
+                    }
+                )
+            )
+        case .array(let terms):
+            guard terms.array.count <= allowList.maximumArrayLength else {
+                throw Biscuit.AllowListError.arrayTooLong
+            }
+            self.wrapped = try .array(
+                terms.array.map { try Value(proto: $0, interner: interner, allowList: allowList) }
+            )
+        case .map(let terms):
+            guard terms.entries.count <= allowList.maximumMapLength else {
+                throw Biscuit.AllowListError.mapTooLong
+            }
+            self.wrapped = try .map(
+                Dictionary(
+                    terms.entries.map {
+                        let key = try MapKey(proto: $0.key, interner: interner, allowList: allowList)
+                        let val = try Value(proto: $0.value, interner: interner, allowList: allowList)
+                        return (key, val)
+                    },
+                    uniquingKeysWith: { v1, v2 in
+                        guard v1 == v2 else { throw Biscuit.ValidationError.duplicateMapKey }
+                        return v1
+                    }
+                )
+            )
+        case .null: self.wrapped = .null
+        case .variable: throw Biscuit.ValidationError.variableInFact
+        case .none: throw Biscuit.ValidationError.missingTerm
+        }
     }
 
     /// A negation expression

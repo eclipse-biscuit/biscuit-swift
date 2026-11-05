@@ -23,6 +23,132 @@ extension Biscuit {
         }
     }
 
+    /// An error that occurred because a Biscuit contained a feature not permitted by its AllowList
+    public struct AllowListError: Sendable, Hashable, Error, CustomStringConvertible {
+        internal enum ErrorCode: Hashable {
+            case tokenTooLarge
+            case tooManyBlocks
+            case tooManyFacts
+            case tooManyRules
+            case tooManyChecks
+            case tooManySymbols
+            case tooManyPublicKeys
+            case tooManyQueries
+            case tooManyPredicates
+            case tooManyExpressions
+            case tooManyOps
+            case tooManyTerms
+            case nameTooLong
+            case stringTooLong
+            case bytesTooLong
+            case setTooLong
+            case arrayTooLong
+            case mapTooLong
+            case closuresNotAllowed
+            case signatureVersionTooLow
+            case internalSigningAlgorithmNotAllowed
+            case externalSigningAlgorithmNotAllowed
+            case binaryOperationNotAllowed
+            case unaryOperationNotAllowed
+            case externalFunctionNotAllowed
+            case termTypeNotAllowed
+            case mapKeyTypeNotAllowed
+            case trustedScopeNotAllowed
+            case contextTooLong
+            case checkKindNotAllowed
+            case sealedTokensNotAllowed
+            case unsealedTokensNotAllowed
+            case attenuationsWithExternalSignaturesNotAllowed
+            case attenuationsWithoutExternalSignaturesNotAllowed
+        }
+        let code: ErrorCode
+
+        init(_ code: ErrorCode) {
+            self.code = code
+        }
+
+        static var tokenTooLarge: Self { Self(.tokenTooLarge) }
+        static var tooManyBlocks: Self { Self(.tooManyBlocks) }
+        static var tooManyFacts: Self { Self(.tooManyFacts) }
+        static var tooManyRules: Self { Self(.tooManyRules) }
+        static var tooManyChecks: Self { Self(.tooManyChecks) }
+        static var tooManySymbols: Self { Self(.tooManySymbols) }
+        static var tooManyPublicKeys: Self { Self(.tooManyPublicKeys) }
+        static var tooManyQueries: Self { Self(.tooManyQueries) }
+        static var tooManyPredicates: Self { Self(.tooManyPredicates) }
+        static var tooManyExpressions: Self { Self(.tooManyExpressions) }
+        static var tooManyOps: Self { Self(.tooManyOps) }
+        static var tooManyTerms: Self { Self(.tooManyTerms) }
+        static var nameTooLong: Self { Self(.nameTooLong) }
+        static var stringTooLong: Self { Self(.stringTooLong) }
+        static var bytesTooLong: Self { Self(.bytesTooLong) }
+        static var setTooLong: Self { Self(.setTooLong) }
+        static var arrayTooLong: Self { Self(.arrayTooLong) }
+        static var mapTooLong: Self { Self(.mapTooLong) }
+        static var closuresNotAllowed: Self { Self(.closuresNotAllowed) }
+        static var signatureVersionTooLow: Self { Self(.signatureVersionTooLow) }
+        static var internalSigningAlgorithmNotAllowed: Self { Self(.internalSigningAlgorithmNotAllowed) }
+        static var externalSigningAlgorithmNotAllowed: Self { Self(.externalSigningAlgorithmNotAllowed) }
+        static var binaryOperationNotAllowed: Self { Self(.binaryOperationNotAllowed) }
+        static var unaryOperationNotAllowed: Self { Self(.unaryOperationNotAllowed) }
+        static var externalFunctionNotAllowed: Self { Self(.externalFunctionNotAllowed) }
+        static var termTypeNotAllowed: Self { Self(.termTypeNotAllowed) }
+        static var mapKeyTypeNotAllowed: Self { Self(.mapKeyTypeNotAllowed) }
+        static var trustedScopeNotAllowed: Self { Self(.trustedScopeNotAllowed) }
+        static var contextTooLong: Self { Self(.contextTooLong) }
+        static var checkKindNotAllowed: Self { Self(.checkKindNotAllowed) }
+        static var sealedTokensNotAllowed: Self { Self(.sealedTokensNotAllowed) }
+        static var unsealedTokensNotAllowed: Self { Self(.unsealedTokensNotAllowed) }
+        static var attenuationsWithExternalSignaturesNotAllowed: Self {
+            Self(.attenuationsWithExternalSignaturesNotAllowed)
+        }
+        static var attenuationsWithoutExternalSignaturesNotAllowed: Self {
+            Self(.attenuationsWithoutExternalSignaturesNotAllowed)
+        }
+
+        public var description: String {
+            switch self.code {
+            case .tokenTooLarge: "Biscuit is too large"
+            case .tooManyBlocks: "Biscuit contains too many blocks"
+            case .tooManyFacts: "Biscuit block contains too many facts"
+            case .tooManyRules: "Biscuit block contains too many rules"
+            case .tooManyChecks: "Biscuit block contains too many checks"
+            case .tooManySymbols: "Biscuit block contains too many symbols"
+            case .tooManyPublicKeys: "Biscuit block contains too many public keys"
+            case .tooManyQueries: "Biscuit check contains too many queries"
+            case .tooManyPredicates: "Biscuit rule or query body contains too many predicates"
+            case .tooManyExpressions: "Biscuit rule or query body contains too many expressions"
+            case .tooManyOps: "Biscuit expression contains too many operations"
+            case .tooManyTerms: "Biscuit fact or predicate contains too many terms"
+            case .nameTooLong: "Biscuit contains a name which is too long"
+            case .stringTooLong: "Biscuit contains a string which is too long"
+            case .bytesTooLong: "Biscuit contains a bytes value which is too long"
+            case .setTooLong: "Biscuit contains a set which is too long"
+            case .arrayTooLong: "Biscuit contains an array which is too long"
+            case .mapTooLong: "Biscuit contains a map which is too long"
+            case .closuresNotAllowed: "Biscuit contains closures, which are not allowed"
+            case .signatureVersionTooLow: "Biscuit block uses a signature version which is too low"
+            case .internalSigningAlgorithmNotAllowed: "Biscuit block is signed with an algorithm which is not allowed"
+            case .externalSigningAlgorithmNotAllowed:
+                "Biscuit block has a third party signature with an algorithm which is not allowed"
+            case .binaryOperationNotAllowed: "Biscuit contains a binary operation which is not allowed"
+            case .unaryOperationNotAllowed: "Biscuit contains a unary operation which is not allowed"
+            case .externalFunctionNotAllowed: "Biscuit calls a foreign function which is not allowed"
+            case .termTypeNotAllowed: "Biscuit contains a term of a type which is not allowed"
+            case .mapKeyTypeNotAllowed: "Biscuit contains a map key of a type which is not allowed"
+            case .trustedScopeNotAllowed: "Biscuit trusts a scope which is not allowed"
+            case .contextTooLong: "Biscuit block contains a context which is too long"
+            case .checkKindNotAllowed: "Biscuit contains a kind of check which is not allowed"
+            case .sealedTokensNotAllowed: "Biscuit is sealed, which is not allowed"
+            case .unsealedTokensNotAllowed: "Biscuit is not sealed, which is not allowed"
+            case .attenuationsWithExternalSignaturesNotAllowed:
+                "Biscuit contains attenuations with external signatures, which are not allowed"
+            case .attenuationsWithoutExternalSignaturesNotAllowed:
+                "Biscuit contains attenuations without external signatures, which are not allowed"
+            }
+        }
+    }
+
     /// An error that occurred because authorization failed
     public struct AuthorizationError: Sendable, Hashable, Error {
         enum Wrapped: Hashable {

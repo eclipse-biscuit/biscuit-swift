@@ -6,9 +6,15 @@ enum OpUnary: Sendable, Hashable {
     case negate, parens, length, typeOf
     case ffi(String)
 
-    init(proto: Biscuit_Format_Schema_OpUnary, interner: InternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_OpUnary, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws
+    {
         guard proto.hasKind else {
             throw Biscuit.ValidationError.missingOp
+        }
+        if let allowedOperations = allowList.allowedUnaryOperations {
+            guard allowedOperations.contains(Biscuit.UnaryOperation(kind: proto.kind)) else {
+                throw Biscuit.AllowListError.unaryOperationNotAllowed
+            }
         }
         switch proto.kind {
         case .negate: self = .negate
@@ -19,7 +25,16 @@ enum OpUnary: Sendable, Hashable {
             guard proto.hasFfiName else {
                 throw Biscuit.ValidationError.missingFFI
             }
-            self = try .ffi(interner.lookupSymbol(proto.ffiName))
+            let name = try interner.lookupSymbol(proto.ffiName)
+            guard name.utf8.count <= allowList.maximumNameLength else {
+                throw Biscuit.AllowListError.nameTooLong
+            }
+            if let allowedFunctions = allowList.allowedUnaryExternalFunctions {
+                guard allowedFunctions.contains(name) else {
+                    throw Biscuit.AllowListError.externalFunctionNotAllowed
+                }
+            }
+            self = .ffi(name)
         }
     }
 

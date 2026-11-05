@@ -12,13 +12,22 @@ extension Biscuit {
         /// The trusted scopes of this query
         public let trusted: [TrustedScope]
 
-        init(proto: Biscuit_Format_Schema_Rule, interner: InternmentTable) throws {
+        init(proto: Biscuit_Format_Schema_Rule, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws
+        {
             guard proto.head == Predicate.query else {
                 throw ValidationError.invalidQueryHead
             }
-            self.predicates = try proto.body.map { try Predicate(proto: $0, interner: interner) }
-            self.expressions = try proto.expressions.map { try Expression(proto: $0, interner: interner) }
-            self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner) }
+            guard proto.body.count <= allowList.maximumPredicatesPerBody else {
+                throw AllowListError.tooManyPredicates
+            }
+            guard proto.expressions.count <= allowList.maximumExpressionsPerBody else {
+                throw AllowListError.tooManyExpressions
+            }
+            self.predicates = try proto.body.map { try Predicate(proto: $0, interner: interner, allowList: allowList) }
+            self.expressions = try proto.expressions.map {
+                try Expression(proto: $0, interner: interner, allowList: allowList)
+            }
+            self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner, allowList: allowList) }
         }
 
         init(_ predicates: [Predicate], _ expressions: [Expression], _ trusted: [TrustedScope]) {

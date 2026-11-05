@@ -49,14 +49,22 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
         self = parser.rules[0]
     }
 
-    init(proto: Biscuit_Format_Schema_Rule, interner: InternmentTable) throws {
+    init(proto: Biscuit_Format_Schema_Rule, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws {
         guard proto.hasHead else {
             throw Biscuit.ValidationError.missingRuleHead
         }
-        self.head = try Predicate(proto: proto.head, interner: interner)
-        self.bodyPredicates = try proto.body.map { try Predicate(proto: $0, interner: interner) }
-        self.expressions = try proto.expressions.map { try Expression(proto: $0, interner: interner) }
-        self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner) }
+        guard proto.body.count <= allowList.maximumPredicatesPerBody else {
+            throw Biscuit.AllowListError.tooManyPredicates
+        }
+        guard proto.expressions.count <= allowList.maximumExpressionsPerBody else {
+            throw Biscuit.AllowListError.tooManyExpressions
+        }
+        self.head = try Predicate(proto: proto.head, interner: interner, allowList: allowList)
+        self.bodyPredicates = try proto.body.map { try Predicate(proto: $0, interner: interner, allowList: allowList) }
+        self.expressions = try proto.expressions.map {
+            try Expression(proto: $0, interner: interner, allowList: allowList)
+        }
+        self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner, allowList: allowList) }
         if !self.head.terms.allSatisfy({ term in
             term.isConcrete || self.bodyPredicates.contains(where: { $0.terms.contains(term) })
         }) {

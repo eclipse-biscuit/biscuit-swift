@@ -17,9 +17,22 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
         self.ops = body.expression.ops
     }
 
-    init(proto: Biscuit_Format_Schema_OpClosure, interner: InternmentTable) throws {
-        self.params = try proto.params.map { try interner.lookupSymbol($0) }
-        self.ops = try proto.ops.map { try Op(proto: $0, interner: interner) }
+    init(
+        proto: Biscuit_Format_Schema_OpClosure,
+        interner: InternmentTable,
+        allowList: Biscuit.AllowList.PerBlock,
+        remainingOps: inout Int
+    ) throws {
+        self.params = try proto.params.map {
+            let name = try interner.lookupSymbol($0)
+            guard name.utf8.count <= allowList.maximumNameLength else {
+                throw Biscuit.AllowListError.nameTooLong
+            }
+            return name
+        }
+        self.ops = try proto.ops.map {
+            try Op(proto: $0, interner: interner, allowList: allowList, remainingOps: &remainingOps)
+        }
     }
 
     init(params: [String], body: Parser.Expression) {
