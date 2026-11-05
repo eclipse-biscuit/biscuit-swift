@@ -19,6 +19,8 @@ extension Biscuit {
     /// allowList.attenuations.allowClosures = false
     /// ```
     ///
+    /// Alternatively, start from ``allowNothing`` and enable only the features you need.
+    ///
     /// A Biscuit which contains a feature that is not allowed fails to deserialize with an
     /// ``AllowListError``.
     public struct AllowList: Sendable, Hashable {
@@ -55,6 +57,27 @@ extension Biscuit {
 
         /// An AllowList which allows all features
         public static let allowEverything = AllowList()
+
+        /// An AllowList which allows no features
+        ///
+        /// Future versions of this library may add features which will be disallowed by this
+        /// AllowList; tokens accepted by an AllowList built from this one may be rejected after
+        /// upgrading until those features are enabled.
+        public static let allowNothing: AllowList = {
+            var allowList = AllowList()
+            allowList.allowAttenuationsWithExternalSignatures = false
+            allowList.allowAttenuationsWithoutExternalSignatures = false
+            allowList.allowSealedTokens = false
+            allowList.allowUnsealedTokens = false
+            allowList.maximumTokenSize = 0
+            allowList.maximumBlocks = 0
+            allowList.minimumSignatureVersion = 1
+            allowList.allowedInternalSigningAlgorithms = []
+            allowList.allowedExternalSigningAlgorithms = []
+            allowList.authority = .allowNothing
+            allowList.attenuations = .allowNothing
+            return allowList
+        }()
 
         /// The features allowed within a single block of a token
         public struct PerBlock: Sendable, Hashable {
@@ -123,6 +146,41 @@ extension Biscuit {
 
             /// A PerBlock allow list which allows all features
             public static let allowEverything = PerBlock()
+
+            /// A PerBlock allow list which allows no features
+            ///
+            /// Future versions of this library may add settings, which will be disallowed by this
+            /// allow list.
+            public static let allowNothing: PerBlock = {
+                var allowList = PerBlock()
+                allowList.allowClosures = false
+                allowList.maximumFacts = 0
+                allowList.maximumRules = 0
+                allowList.maximumChecks = 0
+                allowList.maximumSymbols = 0
+                allowList.maximumPublicKeys = 0
+                allowList.maximumContextLength = 0
+                allowList.maximumQueriesPerCheck = 0
+                allowList.maximumPredicatesPerBody = 0
+                allowList.maximumExpressionsPerBody = 0
+                allowList.maximumOpsPerExpression = 0
+                allowList.maximumTermsPerPredicate = 0
+                allowList.maximumNameLength = 0
+                allowList.maximumBytesLength = 0
+                allowList.maximumStringLength = 0
+                allowList.maximumSetLength = 0
+                allowList.maximumArrayLength = 0
+                allowList.maximumMapLength = 0
+                allowList.allowedBinaryOperations = []
+                allowList.allowedUnaryOperations = []
+                allowList.allowedUnaryExternalFunctions = []
+                allowList.allowedBinaryExternalFunctions = []
+                allowList.allowedTermTypes = []
+                allowList.allowedMapKeyTypes = []
+                allowList.allowedTrustedScopes = []
+                allowList.allowedCheckKinds = []
+                return allowList
+            }()
         }
     }
 }
