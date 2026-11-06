@@ -13,6 +13,7 @@ final class DatalogPrintingTests: XCTestCase {
         XCTAssertEqual("\(Value.emptySet.contains(100))", "{,}.contains(100)")
         XCTAssertEqual("\(Term(variable: "x").add(1))", "$x + 1")
         XCTAssertEqual("\(Data([0, 0]).term.length)", "hex:0000.length()")
+        XCTAssertEqual("\(true.term.tryOr(false))", "true.try_or(false)")
     }
 
     func testPrintFact() {

@@ -356,7 +356,7 @@ func printOps(_ ops: [Op], _ offset: inout Int, _ isLazy: Bool = false) -> Strin
         case .all: "\(e1).all(\(e2))"
         case .get: "\(e1).get(\(e2))"
         case .ffi(let name): "\(e1).extern::\(name)(\(e2))"
-        case .tryOr: "\(e1).tryOr(\(e2))"
+        case .tryOr: "\(e1).try_or(\(e2))"
         }
     case .unary(let op):
         let e = printOps(ops, &offset)
