@@ -103,15 +103,15 @@ public struct Biscuit: Sendable, Hashable {
     /// - Parameters:
     ///   - serializedData: the serialized representation of the Biscuit
     ///   - rootKey: the key that is expected to have signed this Biscuit
-    ///   - allowList: the features which this Biscuit is permitted to contain
+    ///   - limits: limits on the features and sizes this Biscuit may contain
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if the
     /// serializedData is not in the proper format or signatures are not valid
     public init<Key: PublicKey>(
         serializedData: Data,
         rootKey: Key,
-        allowList: AllowList = .allowEverything
+        limitedBy limits: DeserializationLimits = .allowEverything
     ) throws {
-        try self.init(serializedData: serializedData, getRootKey: { _ in rootKey }, allowList: allowList)
+        try self.init(serializedData: serializedData, getRootKey: { _ in rootKey }, limitedBy: limits)
     }
 
     /// Deserializes a Biscuit from its serialized representation, using a RootKeyID in the Biscuit
@@ -121,33 +121,33 @@ public struct Biscuit: Sendable, Hashable {
     ///   - serializedData: the serialized representation of the Biscuit
     ///   - getRootKey: returns the key that is expected to have signed this Biscuit; if the
     ///   Biscuit contains a RootKeyID, that is passed as a parameter
-    ///   - allowList: the features which this Biscuit is permitted to contain
+    ///   - limits: limits on the features and sizes this Biscuit may contain
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if the
     /// serializedData is not in the proper format or signatures are not valid
     public init<Key: PublicKey>(
         serializedData: Data,
         getRootKey: (RootKeyID?) -> Key?,
-        allowList: AllowList = .allowEverything
+        limitedBy limits: DeserializationLimits = .allowEverything
     ) throws {
-        guard serializedData.count <= allowList.maximumTokenSize else {
-            throw AllowListError.tokenTooLarge
+        guard serializedData.count <= limits.maximumTokenSize else {
+            throw DeserializationLimitError.tokenTooLarge
         }
         let proto = try Biscuit_Format_Schema_Biscuit(serializedBytes: serializedData)
         guard proto.hasAuthority else {
             throw ValidationError.missingAuthority
         }
         // The authority block counts towards the maximum
-        guard proto.blocks.count + 1 <= allowList.maximumBlocks else {
-            throw AllowListError.tooManyBlocks
+        guard proto.blocks.count + 1 <= limits.maximumBlocks else {
+            throw DeserializationLimitError.tooManyBlocks
         }
         switch proto.proof.content {
         case .finalSignature:
-            guard allowList.allowSealedTokens else {
-                throw AllowListError.sealedTokensNotAllowed
+            guard limits.allowSealedTokens else {
+                throw DeserializationLimitError.sealedTokensNotAllowed
             }
         case .nextSecret:
-            guard allowList.allowUnsealedTokens else {
-                throw AllowListError.unsealedTokensNotAllowed
+            guard limits.allowUnsealedTokens else {
+                throw DeserializationLimitError.unsealedTokensNotAllowed
             }
         case .none: break
         }
@@ -163,7 +163,7 @@ public struct Biscuit: Sendable, Hashable {
         self.authority = try Block.authority(
             proto: proto.authority,
             key: rootKey,
-            allowList: allowList,
+            limits: limits,
             interner: &interner
         )
         var lastBlock = self.authority
@@ -171,7 +171,7 @@ public struct Biscuit: Sendable, Hashable {
             lastBlock = try Block.attenuation(
                 proto: $0,
                 lastBlock: lastBlock,
-                allowList: allowList,
+                limits: limits,
                 interner: &interner
             )
             return lastBlock
@@ -186,15 +186,15 @@ public struct Biscuit: Sendable, Hashable {
     /// - Parameters:
     ///   - base64URLEncoded: the base64url representation of the Biscuit
     ///   - rootKey: the key that is expected to have signed this Biscuit
-    ///   - allowList: the features which this Biscuit is permitted to contain
+    ///   - limits: limits on the features and sizes this Biscuit may contain
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if
     /// base64URLEncoded or the underlying data is not in the proper format or signatures are not valid
     public init<Key: PublicKey>(
         base64URLEncoded: String,
         rootKey: Key,
-        allowList: AllowList = .allowEverything
+        limitedBy limits: DeserializationLimits = .allowEverything
     ) throws {
-        try self.init(base64URLEncoded: base64URLEncoded, getRootKey: { _ in rootKey }, allowList: allowList)
+        try self.init(base64URLEncoded: base64URLEncoded, getRootKey: { _ in rootKey }, limitedBy: limits)
     }
 
     /// Deserializes a Biscuit from its base64url representation, using a RootKeyID in the Biscuit
@@ -204,16 +204,16 @@ public struct Biscuit: Sendable, Hashable {
     ///   - base64URLEncoded: the base64url representation of the Biscuit
     ///   - getRootKey: returns the key that is expected to have signed this Biscuit; if the
     ///   Biscuit contains a RootKeyID, that is passed as a parameter
-    ///   - allowList: the features which this Biscuit is permitted to contain
+    ///   - limits: limits on the features and sizes this Biscuit may contain
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if
     /// base64url or the underlying data is not in the proper format or signatures are not valid
     public init<Key: PublicKey>(
         base64URLEncoded: String,
         getRootKey: (RootKeyID?) -> Key?,
-        allowList: AllowList = .allowEverything
+        limitedBy limits: DeserializationLimits = .allowEverything
     ) throws {
         let data = try Biscuits.base64URLDecoded(base64URLEncoded)
-        try self.init(serializedData: data, getRootKey: getRootKey, allowList: allowList)
+        try self.init(serializedData: data, getRootKey: getRootKey, limitedBy: limits)
     }
 
     init(_ parent: Biscuit, _ attenuations: [Block], _ interner: InternmentTable, _ proof: Proof) {

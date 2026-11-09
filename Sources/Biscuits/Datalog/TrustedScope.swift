@@ -69,7 +69,11 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
         self.wrapped = try .publicKey(Biscuit.ThirdPartyKey(algorithm: algorithm, hexString: hexString))
     }
 
-    init(proto: Biscuit_Format_Schema_Scope, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws {
+    init(
+        proto: Biscuit_Format_Schema_Scope,
+        interner: InternmentTable,
+        limits: Biscuit.DeserializationLimits.PerBlock
+    ) throws {
         self.wrapped =
             switch proto.content {
             case .scopeType(.authority): .authority
@@ -77,9 +81,9 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
             case .publicKey(let key): try .publicKey(interner.lookupPublicKey(key))
             case .none: throw Biscuit.ValidationError.missingScope
             }
-        if let allowedScopes = allowList.allowedTrustedScopes {
+        if let allowedScopes = limits.allowedTrustedScopes {
             guard allowedScopes.contains(self.kind) else {
-                throw Biscuit.AllowListError.trustedScopeNotAllowed
+                throw Biscuit.DeserializationLimitError.trustedScopeNotAllowed
             }
         }
     }

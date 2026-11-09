@@ -5,25 +5,25 @@
 extension Biscuit {
     /// Restrictions on the features a Biscuit may contain, enforced while it is deserialized
     ///
-    /// Settings which apply to the token as a whole are properties of the AllowList itself, while
-    /// settings which apply within each block are part of a ``PerBlock`` allow list. Separate
-    /// ``PerBlock`` allow lists are used for the authority block and for attenuations, so that
-    /// attenuations can be restricted more tightly than the authority block.
+    /// Settings which apply to the token as a whole are properties of DeserializationLimits itself,
+    /// while settings which apply within each block are part of ``PerBlock``. Separate ``PerBlock``
+    /// limits are used for the authority block and for attenuations, so that attenuations can be
+    /// restricted more tightly than the authority block.
     ///
     /// Every setting allows everything by default; start from ``allowEverything`` or ``init()`` and
     /// restrict only the features you need to:
     ///
     /// ```swift
-    /// var allowList = Biscuit.AllowList()
-    /// allowList.maximumBlocks = 4
-    /// allowList.attenuations.allowClosures = false
+    /// var limits = Biscuit.DeserializationLimits()
+    /// limits.maximumBlocks = 4
+    /// limits.attenuations.allowClosures = false
     /// ```
     ///
     /// Alternatively, start from ``allowNothing`` and enable only the features you need.
     ///
-    /// A Biscuit which contains a feature that is not allowed fails to deserialize with an
-    /// ``AllowListError``.
-    public struct AllowList: Sendable, Hashable {
+    /// A Biscuit which contains a feature that is not allowed fails to deserialize with a
+    /// ``DeserializationLimitError``.
+    public struct DeserializationLimits: Sendable, Hashable {
         /// Whether attenuations may be signed by a third party
         public var allowAttenuationsWithExternalSignatures: Bool = true
         /// Whether attenuations may be signed without a third party
@@ -47,36 +47,36 @@ extension Biscuit {
         /// The signing algorithms allowed for the third party keys which sign attenuations
         public var allowedExternalSigningAlgorithms: Set<SigningAlgorithm>? = nil
 
-        /// The allow list for the authority block
+        /// The limits for the authority block
         public var authority: PerBlock = .allowEverything
-        /// The allow list for each attenuation
+        /// The limits for each attenuation
         public var attenuations: PerBlock = .allowEverything
 
-        /// Construct an AllowList which allows all features
+        /// Construct DeserializationLimits which allow all features
         public init() {}
 
-        /// An AllowList which allows all features
-        public static let allowEverything = AllowList()
+        /// DeserializationLimits which allow all features
+        public static let allowEverything = DeserializationLimits()
 
-        /// An AllowList which allows no features
+        /// DeserializationLimits which allow no features
         ///
-        /// Future versions of this library may add features which will be disallowed by this
-        /// AllowList; tokens accepted by an AllowList built from this one may be rejected after
-        /// upgrading until those features are enabled.
-        public static let allowNothing: AllowList = {
-            var allowList = AllowList()
-            allowList.allowAttenuationsWithExternalSignatures = false
-            allowList.allowAttenuationsWithoutExternalSignatures = false
-            allowList.allowSealedTokens = false
-            allowList.allowUnsealedTokens = false
-            allowList.maximumTokenSize = 0
-            allowList.maximumBlocks = 0
-            allowList.minimumSignatureVersion = 1
-            allowList.allowedInternalSigningAlgorithms = []
-            allowList.allowedExternalSigningAlgorithms = []
-            allowList.authority = .allowNothing
-            allowList.attenuations = .allowNothing
-            return allowList
+        /// Future versions of this library may add features which will be disallowed by these
+        /// limits; tokens accepted by limits built from these may be rejected after upgrading until
+        /// those features are enabled.
+        public static let allowNothing: DeserializationLimits = {
+            var limits = DeserializationLimits()
+            limits.allowAttenuationsWithExternalSignatures = false
+            limits.allowAttenuationsWithoutExternalSignatures = false
+            limits.allowSealedTokens = false
+            limits.allowUnsealedTokens = false
+            limits.maximumTokenSize = 0
+            limits.maximumBlocks = 0
+            limits.minimumSignatureVersion = 1
+            limits.allowedInternalSigningAlgorithms = []
+            limits.allowedExternalSigningAlgorithms = []
+            limits.authority = .allowNothing
+            limits.attenuations = .allowNothing
+            return limits
         }()
 
         /// The features allowed within a single block of a token
@@ -141,45 +141,45 @@ extension Biscuit {
             /// The kinds of checks allowed
             public var allowedCheckKinds: Set<Check.Kind>? = nil
 
-            /// Construct a PerBlock allow list which allows all features
+            /// Construct PerBlock limits which allow all features
             public init() {}
 
-            /// A PerBlock allow list which allows all features
+            /// PerBlock limits which allow all features
             public static let allowEverything = PerBlock()
 
-            /// A PerBlock allow list which allows no features
+            /// PerBlock limits which allow no features
             ///
-            /// Future versions of this library may add settings, which will be disallowed by this
-            /// allow list.
+            /// Future versions of this library may add settings, which will be disallowed by these
+            /// limits.
             public static let allowNothing: PerBlock = {
-                var allowList = PerBlock()
-                allowList.allowClosures = false
-                allowList.maximumFacts = 0
-                allowList.maximumRules = 0
-                allowList.maximumChecks = 0
-                allowList.maximumSymbols = 0
-                allowList.maximumPublicKeys = 0
-                allowList.maximumContextLength = 0
-                allowList.maximumQueriesPerCheck = 0
-                allowList.maximumPredicatesPerBody = 0
-                allowList.maximumExpressionsPerBody = 0
-                allowList.maximumOpsPerExpression = 0
-                allowList.maximumTermsPerPredicate = 0
-                allowList.maximumNameLength = 0
-                allowList.maximumBytesLength = 0
-                allowList.maximumStringLength = 0
-                allowList.maximumSetLength = 0
-                allowList.maximumArrayLength = 0
-                allowList.maximumMapLength = 0
-                allowList.allowedBinaryOperations = []
-                allowList.allowedUnaryOperations = []
-                allowList.allowedUnaryExternalFunctions = []
-                allowList.allowedBinaryExternalFunctions = []
-                allowList.allowedTermTypes = []
-                allowList.allowedMapKeyTypes = []
-                allowList.allowedTrustedScopes = []
-                allowList.allowedCheckKinds = []
-                return allowList
+                var limits = PerBlock()
+                limits.allowClosures = false
+                limits.maximumFacts = 0
+                limits.maximumRules = 0
+                limits.maximumChecks = 0
+                limits.maximumSymbols = 0
+                limits.maximumPublicKeys = 0
+                limits.maximumContextLength = 0
+                limits.maximumQueriesPerCheck = 0
+                limits.maximumPredicatesPerBody = 0
+                limits.maximumExpressionsPerBody = 0
+                limits.maximumOpsPerExpression = 0
+                limits.maximumTermsPerPredicate = 0
+                limits.maximumNameLength = 0
+                limits.maximumBytesLength = 0
+                limits.maximumStringLength = 0
+                limits.maximumSetLength = 0
+                limits.maximumArrayLength = 0
+                limits.maximumMapLength = 0
+                limits.allowedBinaryOperations = []
+                limits.allowedUnaryOperations = []
+                limits.allowedUnaryExternalFunctions = []
+                limits.allowedBinaryExternalFunctions = []
+                limits.allowedTermTypes = []
+                limits.allowedMapKeyTypes = []
+                limits.allowedTrustedScopes = []
+                limits.allowedCheckKinds = []
+                return limits
             }()
         }
     }

@@ -239,35 +239,39 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
         self.wrapped = wrapped
     }
 
-    init(proto: Biscuit_Format_Schema_Term, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws {
-        if let allowedKinds = allowList.allowedTermTypes, let kind = Kind(content: proto.content) {
+    init(
+        proto: Biscuit_Format_Schema_Term,
+        interner: InternmentTable,
+        limits: Biscuit.DeserializationLimits.PerBlock
+    ) throws {
+        if let allowedKinds = limits.allowedTermTypes, let kind = Kind(content: proto.content) {
             guard allowedKinds.contains(kind) else {
-                throw Biscuit.AllowListError.termTypeNotAllowed
+                throw Biscuit.DeserializationLimitError.termTypeNotAllowed
             }
         }
         switch proto.content {
         case .integer(let i): self.wrapped = .integer(i)
         case .string(let s):
             let string = try interner.lookupSymbol(s)
-            guard string.utf8.count <= allowList.maximumStringLength else {
-                throw Biscuit.AllowListError.stringTooLong
+            guard string.utf8.count <= limits.maximumStringLength else {
+                throw Biscuit.DeserializationLimitError.stringTooLong
             }
             self.wrapped = .string(string)
         case .date(let d): self.wrapped = .date(d)
         case .bytes(let b):
-            guard b.count <= allowList.maximumBytesLength else {
-                throw Biscuit.AllowListError.bytesTooLong
+            guard b.count <= limits.maximumBytesLength else {
+                throw Biscuit.DeserializationLimitError.bytesTooLong
             }
             self.wrapped = .bytes(b)
         case .bool(let b): self.wrapped = .bool(b)
         case .set(let terms):
-            guard terms.set.count <= allowList.maximumSetLength else {
-                throw Biscuit.AllowListError.setTooLong
+            guard terms.set.count <= limits.maximumSetLength else {
+                throw Biscuit.DeserializationLimitError.setTooLong
             }
             self.wrapped = try .set(
                 Set(
                     terms.set.map {
-                        let value = try Value(proto: $0, interner: interner, allowList: allowList)
+                        let value = try Value(proto: $0, interner: interner, limits: limits)
                         if case .set = value.wrapped {
                             throw Biscuit.ValidationError.setInSet
                         }
@@ -276,21 +280,21 @@ public struct Value: ValueConvertible, TermConvertible, ExpressionConvertible, S
                 )
             )
         case .array(let terms):
-            guard terms.array.count <= allowList.maximumArrayLength else {
-                throw Biscuit.AllowListError.arrayTooLong
+            guard terms.array.count <= limits.maximumArrayLength else {
+                throw Biscuit.DeserializationLimitError.arrayTooLong
             }
             self.wrapped = try .array(
-                terms.array.map { try Value(proto: $0, interner: interner, allowList: allowList) }
+                terms.array.map { try Value(proto: $0, interner: interner, limits: limits) }
             )
         case .map(let terms):
-            guard terms.entries.count <= allowList.maximumMapLength else {
-                throw Biscuit.AllowListError.mapTooLong
+            guard terms.entries.count <= limits.maximumMapLength else {
+                throw Biscuit.DeserializationLimitError.mapTooLong
             }
             self.wrapped = try .map(
                 Dictionary(
                     terms.entries.map {
-                        let key = try MapKey(proto: $0.key, interner: interner, allowList: allowList)
-                        let val = try Value(proto: $0.value, interner: interner, allowList: allowList)
+                        let key = try MapKey(proto: $0.key, interner: interner, limits: limits)
+                        let val = try Value(proto: $0.value, interner: interner, limits: limits)
                         return (key, val)
                     },
                     uniquingKeysWith: { v1, v2 in

@@ -20,18 +20,18 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
     init(
         proto: Biscuit_Format_Schema_OpClosure,
         interner: InternmentTable,
-        allowList: Biscuit.AllowList.PerBlock,
+        limits: Biscuit.DeserializationLimits.PerBlock,
         remainingOps: inout Int
     ) throws {
         self.params = try proto.params.map {
             let name = try interner.lookupSymbol($0)
-            guard name.utf8.count <= allowList.maximumNameLength else {
-                throw Biscuit.AllowListError.nameTooLong
+            guard name.utf8.count <= limits.maximumNameLength else {
+                throw Biscuit.DeserializationLimitError.nameTooLong
             }
             return name
         }
         self.ops = try proto.ops.map {
-            try Op(proto: $0, interner: interner, allowList: allowList, remainingOps: &remainingOps)
+            try Op(proto: $0, interner: interner, limits: limits, remainingOps: &remainingOps)
         }
     }
 

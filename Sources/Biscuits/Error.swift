@@ -23,8 +23,8 @@ extension Biscuit {
         }
     }
 
-    /// An error that occurred because a Biscuit contained a feature not permitted by its AllowList
-    public struct AllowListError: Sendable, Hashable, Error, CustomStringConvertible {
+    /// An error that occurred because a Biscuit exceeded the DeserializationLimits it was deserialized with
+    public struct DeserializationLimitError: Sendable, Hashable, Error, CustomStringConvertible {
         internal enum ErrorCode: Hashable {
             case tokenTooLarge
             case tooManyBlocks

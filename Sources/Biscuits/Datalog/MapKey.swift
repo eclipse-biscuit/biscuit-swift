@@ -48,18 +48,22 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
         }
     }
 
-    init(proto: Biscuit_Format_Schema_MapKey, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws {
-        if let allowedKinds = allowList.allowedMapKeyTypes, let kind = Kind(content: proto.content) {
+    init(
+        proto: Biscuit_Format_Schema_MapKey,
+        interner: InternmentTable,
+        limits: Biscuit.DeserializationLimits.PerBlock
+    ) throws {
+        if let allowedKinds = limits.allowedMapKeyTypes, let kind = Kind(content: proto.content) {
             guard allowedKinds.contains(kind) else {
-                throw Biscuit.AllowListError.mapKeyTypeNotAllowed
+                throw Biscuit.DeserializationLimitError.mapKeyTypeNotAllowed
             }
         }
         switch proto.content {
         case .integer(let i): self.wrapped = .integer(i)
         case .string(let s):
             let string = try interner.lookupSymbol(s)
-            guard string.utf8.count <= allowList.maximumStringLength else {
-                throw Biscuit.AllowListError.stringTooLong
+            guard string.utf8.count <= limits.maximumStringLength else {
+                throw Biscuit.DeserializationLimitError.stringTooLong
             }
             self.wrapped = .string(string)
         case .none: throw Biscuit.ValidationError.missingTerm

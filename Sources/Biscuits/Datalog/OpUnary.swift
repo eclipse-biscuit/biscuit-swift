@@ -6,14 +6,17 @@ enum OpUnary: Sendable, Hashable {
     case negate, parens, length, typeOf
     case ffi(String)
 
-    init(proto: Biscuit_Format_Schema_OpUnary, interner: InternmentTable, allowList: Biscuit.AllowList.PerBlock) throws
-    {
+    init(
+        proto: Biscuit_Format_Schema_OpUnary,
+        interner: InternmentTable,
+        limits: Biscuit.DeserializationLimits.PerBlock
+    ) throws {
         guard proto.hasKind else {
             throw Biscuit.ValidationError.missingOp
         }
-        if let allowedOperations = allowList.allowedUnaryOperations {
+        if let allowedOperations = limits.allowedUnaryOperations {
             guard allowedOperations.contains(Biscuit.UnaryOperation(kind: proto.kind)) else {
-                throw Biscuit.AllowListError.unaryOperationNotAllowed
+                throw Biscuit.DeserializationLimitError.unaryOperationNotAllowed
             }
         }
         switch proto.kind {
@@ -26,12 +29,12 @@ enum OpUnary: Sendable, Hashable {
                 throw Biscuit.ValidationError.missingFFI
             }
             let name = try interner.lookupSymbol(proto.ffiName)
-            guard name.utf8.count <= allowList.maximumNameLength else {
-                throw Biscuit.AllowListError.nameTooLong
+            guard name.utf8.count <= limits.maximumNameLength else {
+                throw Biscuit.DeserializationLimitError.nameTooLong
             }
-            if let allowedFunctions = allowList.allowedUnaryExternalFunctions {
+            if let allowedFunctions = limits.allowedUnaryExternalFunctions {
                 guard allowedFunctions.contains(name) else {
-                    throw Biscuit.AllowListError.externalFunctionNotAllowed
+                    throw Biscuit.DeserializationLimitError.externalFunctionNotAllowed
                 }
             }
             self = .ffi(name)

@@ -25,29 +25,29 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     ///
     /// - Parameters:
     ///   - serializedData: the serialized representation of the Biscuit
-    ///   - allowList: the features which this Biscuit is permitted to contain
+    ///   - limits: limits on the features and sizes this Biscuit may contain
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if the
     /// serializedData is not in the proper format
-    public init(serializedData: Data, allowList: Biscuit.AllowList = .allowEverything) throws {
-        guard serializedData.count <= allowList.maximumTokenSize else {
-            throw Biscuit.AllowListError.tokenTooLarge
+    public init(serializedData: Data, limitedBy limits: Biscuit.DeserializationLimits = .allowEverything) throws {
+        guard serializedData.count <= limits.maximumTokenSize else {
+            throw Biscuit.DeserializationLimitError.tokenTooLarge
         }
         let proto = try Biscuit_Format_Schema_Biscuit(serializedBytes: serializedData)
         guard proto.hasAuthority else {
             throw Biscuit.ValidationError.missingAuthority
         }
         // The authority block counts towards the maximum
-        guard proto.blocks.count + 1 <= allowList.maximumBlocks else {
-            throw Biscuit.AllowListError.tooManyBlocks
+        guard proto.blocks.count + 1 <= limits.maximumBlocks else {
+            throw Biscuit.DeserializationLimitError.tooManyBlocks
         }
         switch proto.proof.content {
         case .finalSignature:
-            guard allowList.allowSealedTokens else {
-                throw Biscuit.AllowListError.sealedTokensNotAllowed
+            guard limits.allowSealedTokens else {
+                throw Biscuit.DeserializationLimitError.sealedTokensNotAllowed
             }
         case .nextSecret:
-            guard allowList.allowUnsealedTokens else {
-                throw Biscuit.AllowListError.unsealedTokensNotAllowed
+            guard limits.allowUnsealedTokens else {
+                throw Biscuit.DeserializationLimitError.unsealedTokensNotAllowed
             }
         case .none: break
         }
@@ -59,14 +59,14 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         var interner = InternmentTable()
         self.authority = try Biscuit.Block.unverifiedAuthority(
             proto: proto.authority,
-            allowList: allowList,
+            limits: limits,
             interner: &interner
         )
         var lastBlock = self.authority
         self.attenuations = try proto.blocks.map {
             lastBlock = try Biscuit.Block.unverifiedAttenuation(
                 proto: $0,
-                allowList: allowList,
+                limits: limits,
                 interner: &interner
             )
             return lastBlock
@@ -80,12 +80,12 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     ///
     /// - Parameters:
     ///   - base64URLEncoded: the base64url representation of the Biscuit
-    ///   - allowList: the features which this Biscuit is permitted to contain
+    ///   - limits: limits on the features and sizes this Biscuit may contain
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if base64url or the
     /// underlying data is not in the proper format
-    public init(base64URLEncoded: String, allowList: Biscuit.AllowList = .allowEverything) throws {
+    public init(base64URLEncoded: String, limitedBy limits: Biscuit.DeserializationLimits = .allowEverything) throws {
         let data = try Biscuits.base64URLDecoded(base64URLEncoded)
-        try self.init(serializedData: data, allowList: allowList)
+        try self.init(serializedData: data, limitedBy: limits)
     }
 
     init(

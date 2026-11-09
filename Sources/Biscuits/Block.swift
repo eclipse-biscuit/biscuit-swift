@@ -113,10 +113,10 @@ extension Biscuit {
         static func authority<Key: PublicKey>(
             proto: Biscuit_Format_Schema_SignedBlock,
             key: Key,
-            allowList: AllowList,
+            limits: DeserializationLimits,
             interner: inout InternmentTable
         ) throws -> Block {
-            let block = try Block.unverifiedAuthority(proto: proto, allowList: allowList, interner: &interner)
+            let block = try Block.unverifiedAuthority(proto: proto, limits: limits, interner: &interner)
             guard key.isValidSignature(block.signature, for: block.signatureInput()) else {
                 throw ValidationError.invalidSignature
             }
@@ -126,10 +126,10 @@ extension Biscuit {
         static func attenuation(
             proto: Biscuit_Format_Schema_SignedBlock,
             lastBlock: Block,
-            allowList: AllowList,
+            limits: DeserializationLimits,
             interner: inout InternmentTable
         ) throws -> Block {
-            let block = try Block.unverifiedAttenuation(proto: proto, allowList: allowList, interner: &interner)
+            let block = try Block.unverifiedAttenuation(proto: proto, limits: limits, interner: &interner)
             if let externalSignature = block.externalSignature {
                 try externalSignature.isValidSignature(for: block, lastSig: lastBlock.signature)
             }
@@ -142,15 +142,15 @@ extension Biscuit {
 
         static func unverifiedAuthority(
             proto: Biscuit_Format_Schema_SignedBlock,
-            allowList: AllowList,
+            limits: DeserializationLimits,
             interner: inout InternmentTable
         ) throws -> Block {
-            try Self.checkProto(proto: proto, allowList: allowList)
+            try Self.checkProto(proto: proto, limits: limits)
             guard !proto.hasExternalSignature else {
                 throw ValidationError.thirdPartySignedAuthority
             }
             return Block(
-                datalog: try DatalogBlock(serializedData: proto.block, allowList: allowList.authority, &interner),
+                datalog: try DatalogBlock(serializedData: proto.block, limits: limits.authority, &interner),
                 nextKey: try InternalPublicKey(proto: proto.nextKey),
                 version: proto.hasVersion ? proto.version : nil,
                 serializedDatalog: proto.block,
@@ -161,35 +161,35 @@ extension Biscuit {
 
         static func unverifiedAttenuation(
             proto: Biscuit_Format_Schema_SignedBlock,
-            allowList: AllowList,
+            limits: DeserializationLimits,
             interner: inout InternmentTable
         ) throws -> Block {
             if proto.hasExternalSignature {
-                guard allowList.allowAttenuationsWithExternalSignatures else {
-                    throw AllowListError.attenuationsWithExternalSignaturesNotAllowed
+                guard limits.allowAttenuationsWithExternalSignatures else {
+                    throw DeserializationLimitError.attenuationsWithExternalSignaturesNotAllowed
                 }
             } else {
-                guard allowList.allowAttenuationsWithoutExternalSignatures else {
-                    throw AllowListError.attenuationsWithoutExternalSignaturesNotAllowed
+                guard limits.allowAttenuationsWithoutExternalSignatures else {
+                    throw DeserializationLimitError.attenuationsWithoutExternalSignaturesNotAllowed
                 }
             }
-            try Self.checkProto(proto: proto, allowList: allowList)
+            try Self.checkProto(proto: proto, limits: limits)
             let version = proto.hasVersion ? proto.version : nil
             if proto.hasExternalSignature {
                 guard version ?? 0 >= 1 else {
                     throw ValidationError.deprecatedThirdPartySignature
                 }
                 let externalSignature = try ExternalSignature(proto: proto.externalSignature)
-                if let allowedAlgorithms = allowList.allowedExternalSigningAlgorithms {
+                if let allowedAlgorithms = limits.allowedExternalSigningAlgorithms {
                     guard allowedAlgorithms.contains(externalSignature.publicKey.algorithm) else {
-                        throw AllowListError.externalSigningAlgorithmNotAllowed
+                        throw DeserializationLimitError.externalSigningAlgorithmNotAllowed
                     }
                 }
                 var blockInterner = InternmentTable()
                 return Block(
                     datalog: try DatalogBlock(
                         serializedData: proto.block,
-                        allowList: allowList.attenuations,
+                        limits: limits.attenuations,
                         &blockInterner
                     ),
                     nextKey: try InternalPublicKey(proto: proto.nextKey),
@@ -202,7 +202,7 @@ extension Biscuit {
                 return Block(
                     datalog: try DatalogBlock(
                         serializedData: proto.block,
-                        allowList: allowList.attenuations,
+                        limits: limits.attenuations,
                         &interner
                     ),
                     nextKey: try InternalPublicKey(proto: proto.nextKey),
@@ -230,7 +230,7 @@ extension Biscuit {
             self.externalSignature = externalSignature
         }
 
-        static func checkProto(proto: Biscuit_Format_Schema_SignedBlock, allowList: AllowList) throws {
+        static func checkProto(proto: Biscuit_Format_Schema_SignedBlock, limits: DeserializationLimits) throws {
             guard proto.hasBlock else {
                 throw ValidationError.missingBlockData
             }
@@ -240,9 +240,9 @@ extension Biscuit {
             guard proto.hasNextKey else {
                 throw ValidationError.missingPublicKey
             }
-            if let allowedAlgorithms = allowList.allowedInternalSigningAlgorithms {
+            if let allowedAlgorithms = limits.allowedInternalSigningAlgorithms {
                 guard allowedAlgorithms.contains(SigningAlgorithm(algorithm: proto.nextKey.algorithm)) else {
-                    throw AllowListError.internalSigningAlgorithmNotAllowed
+                    throw DeserializationLimitError.internalSigningAlgorithmNotAllowed
                 }
             }
             if proto.hasVersion {
@@ -251,8 +251,8 @@ extension Biscuit {
                 }
             }
             // A block without a version uses version 0 signatures
-            guard Int(proto.hasVersion ? proto.version : 0) >= allowList.minimumSignatureVersion else {
-                throw AllowListError.signatureVersionTooLow
+            guard Int(proto.hasVersion ? proto.version : 0) >= limits.minimumSignatureVersion else {
+                throw DeserializationLimitError.signatureVersionTooLow
             }
         }
 

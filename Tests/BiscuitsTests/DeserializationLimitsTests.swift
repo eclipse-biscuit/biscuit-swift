@@ -6,15 +6,15 @@ import XCTest
 
 @testable import Biscuits
 
-final class AllowListTests: XCTestCase {
+final class DeserializationLimitsTests: XCTestCase {
     // Every setting must be at its most restrictive value in allowNothing, including settings added
     // in the future, so this checks each stored property by reflection rather than by name
     func testAllowNothingAllowsNothing() {
-        assertAllowsNothing(Biscuit.AllowList.allowNothing, path: "allowNothing")
+        assertAllowsNothing(Biscuit.DeserializationLimits.allowNothing, path: "allowNothing")
     }
 
     func testPerBlockAllowNothingAllowsNothing() {
-        assertAllowsNothing(Biscuit.AllowList.PerBlock.allowNothing, path: "PerBlock.allowNothing")
+        assertAllowsNothing(Biscuit.DeserializationLimits.PerBlock.allowNothing, path: "PerBlock.allowNothing")
     }
 
     private func assertAllowsNothing(_ value: Any, path: String) {
