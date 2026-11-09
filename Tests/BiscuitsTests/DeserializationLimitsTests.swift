@@ -188,6 +188,12 @@ final class DeserializationLimitsTests: XCTestCase {
                 block: datalog("check if [1].any($x -> $x == 1);")
             ),
             BlockLimitCase(
+                property: "maximumBlockSize",
+                restrict: { $0.maximumBlockSize = 10 },
+                expectedError: .blockTooLarge,
+                block: datalog("check if claim(\"YELLOW SUBMARINE\");")
+            ),
+            BlockLimitCase(
                 property: "maximumFacts",
                 restrict: { $0.maximumFacts = 0 },
                 expectedError: .tooManyFacts,

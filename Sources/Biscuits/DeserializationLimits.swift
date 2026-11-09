@@ -84,6 +84,8 @@ extension Biscuit {
             /// Whether expressions may contain closures
             public var allowClosures: Bool = true
 
+            /// The maximum size of a Datalog block in bytes
+            public var maximumBlockSize: Int = .max
             /// The maximum number of facts in the block
             public var maximumFacts: Int = .max
             /// The maximum number of rules in the block
@@ -154,6 +156,7 @@ extension Biscuit {
             public static let allowNothing: PerBlock = {
                 var limits = PerBlock()
                 limits.allowClosures = false
+                limits.maximumBlockSize = 0
                 limits.maximumFacts = 0
                 limits.maximumRules = 0
                 limits.maximumChecks = 0

@@ -27,6 +27,7 @@ extension Biscuit {
     public struct DeserializationLimitError: Sendable, Hashable, Error, CustomStringConvertible {
         internal enum ErrorCode: Hashable {
             case tokenTooLarge
+            case blockTooLarge
             case tooManyBlocks
             case tooManyFacts
             case tooManyRules
@@ -68,6 +69,7 @@ extension Biscuit {
         }
 
         static var tokenTooLarge: Self { Self(.tokenTooLarge) }
+        static var blockTooLarge: Self { Self(.blockTooLarge) }
         static var tooManyBlocks: Self { Self(.tooManyBlocks) }
         static var tooManyFacts: Self { Self(.tooManyFacts) }
         static var tooManyRules: Self { Self(.tooManyRules) }
@@ -109,6 +111,7 @@ extension Biscuit {
         public var description: String {
             switch self.code {
             case .tokenTooLarge: "Biscuit is too large"
+            case .blockTooLarge: "Biscuit Datalog block is too large"
             case .tooManyBlocks: "Biscuit contains too many blocks"
             case .tooManyFacts: "Biscuit block contains too many facts"
             case .tooManyRules: "Biscuit block contains too many rules"

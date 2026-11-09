@@ -141,6 +141,9 @@ extension Biscuit {
             limits: Biscuit.DeserializationLimits.PerBlock,
             _ interner: inout InternmentTable
         ) throws {
+            guard data.count <= limits.maximumBlockSize else {
+                throw DeserializationLimitError.blockTooLarge
+            }
             let proto = try Biscuit_Format_Schema_Block(serializedBytes: data)
             guard proto.hasVersion else {
                 throw Biscuit.ValidationError.missingVersion
