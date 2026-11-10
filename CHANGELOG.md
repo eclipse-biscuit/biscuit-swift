@@ -5,6 +5,10 @@
 - Use a `UInt64` as the internal representation of dates
 - Add `DeserializationLimits` to limit what sorts of tokens are accepted; the limits are checked
   during deserialization and can differ between the authority block and attenuations
+- Add a `DatalogParser` trait (enabled by default) controlling the inclusion of the string-based Datalog parser
+- Fix bugs in the behavior of hexadecimal string parsing: some APIs could crash on strings
+  containing non-hexadecimal characters or odd length or non-empty strings and some did not accept
+  uppercase letters.
 
 # `2.0.1`
 

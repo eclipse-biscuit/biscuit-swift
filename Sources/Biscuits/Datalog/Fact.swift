@@ -26,6 +26,7 @@ public struct Fact: Sendable, Hashable, CustomStringConvertible {
         self.values = finalTerms
     }
 
+    #if DatalogParser
     /// Construct a fact by parsing a String of Datalog
     /// - Parameters:
     ///   - datalog: the datalog that will be parsed
@@ -34,6 +35,7 @@ public struct Fact: Sendable, Hashable, CustomStringConvertible {
         let parser = try Parser.forFact(using: datalog)
         self = parser.facts[0]
     }
+    #endif
 
     init(name: String, values: [Value]) {
         self.name = name

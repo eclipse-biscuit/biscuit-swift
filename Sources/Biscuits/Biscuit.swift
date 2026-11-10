@@ -44,6 +44,7 @@ public struct Biscuit: Sendable, Hashable {
         )
     }
 
+    #if DatalogParser
     /// Creates a new Biscuit.
     ///
     /// - Parameters:
@@ -68,6 +69,7 @@ public struct Biscuit: Sendable, Hashable {
             algorithm: algorithm,
         )
     }
+    #endif
 
     /// Creates a new Biscuit.
     ///
@@ -274,6 +276,7 @@ public struct Biscuit: Sendable, Hashable {
         )
     }
 
+    #if DatalogParser
     /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
     /// scope. This Biscuit remains unattenuated.
     ///
@@ -318,6 +321,7 @@ public struct Biscuit: Sendable, Hashable {
             algorithm: algorithm,
         )
     }
+    #endif
 
     /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
     /// scope. This Biscuit remains unattenuated.
@@ -412,6 +416,7 @@ public struct Biscuit: Sendable, Hashable {
         return try self.authorize(using: authorizer)
     }
 
+    #if DatalogParser
     /// Authorize this Biscuit
     /// - Parameter datalog: the authorizer datalog used to validate this Biscuit, as a String
     /// - Parameter limitedBy: Limitations on the runtime for this query
@@ -426,6 +431,7 @@ public struct Biscuit: Sendable, Hashable {
     ) throws -> Authorization {
         try self.authorize(using: Authorizer(datalog, limitedBy: limitedBy))
     }
+    #endif
 
     /// Authorize this Biscuit
     /// - Parameter authorizer: the authorizer datalog used to validate this Biscuit
@@ -538,6 +544,7 @@ public struct Biscuit: Sendable, Hashable {
         return try self.query(using: Check(kind: kind, trusting: scopes, predicates()), limitedBy: limitedBy)
     }
 
+    #if DatalogParser
     /// Query the biscuit to check if a certain statement holds true
     /// - Parameter datalog: The check to use to query the biscuit, as a String
     /// - Parameter limitedBy: Limitations on the runtime for this query
@@ -551,6 +558,7 @@ public struct Biscuit: Sendable, Hashable {
     ) throws -> Bool {
         try self.query(using: Check(datalog), limitedBy: limitedBy)
     }
+    #endif
 
     var lastBlock: Block {
         self.attenuations.last ?? self.authority

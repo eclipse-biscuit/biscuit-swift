@@ -76,6 +76,7 @@ extension Biscuit {
             try ThirdPartyBlockContents(using: DatalogBlock(context: context, datalog), privateKey, self)
         }
 
+        #if DatalogParser
         /// Generates a block that can be used to attenuate a Biscuit.
         /// - Parameter datalog: The datalog content of this block as a String.
         /// - Parameter privateKey: The key that will be used to sign this block
@@ -90,6 +91,7 @@ extension Biscuit {
         ) throws -> ThirdPartyBlockContents {
             try ThirdPartyBlockContents(using: DatalogBlock(datalog, context: context), privateKey, self)
         }
+        #endif
 
         public func generateBlock<Key: PrivateKey>(
             using datalog: DatalogBlock,

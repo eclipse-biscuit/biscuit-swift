@@ -35,12 +35,14 @@ public struct Closure: Sendable, Hashable, CustomStringConvertible {
         }
     }
 
+    #if DatalogParser
     init(params: [String], body: Parser.Expression) {
         self.params = params
         var ops: [Op] = []
         parseIntoOps(body, &ops)
         self.ops = ops
     }
+    #endif
 
     func opTryOr(_ alternative: Value, _ variables: [String: Value], _ steps: inout StepCounter) throws -> Value {
         do {

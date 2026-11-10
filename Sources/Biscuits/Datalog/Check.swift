@@ -40,6 +40,7 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
         }
     }
 
+    #if DatalogParser
     /// Construct a check by parsing a String of Datalog
     /// - Parameters:
     ///   - datalog: the datalog that will be parsed
@@ -48,6 +49,7 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
         let parser = try Parser.forQuery(using: datalog)
         self = parser.checks[0]
     }
+    #endif
 
     /// Construct a "check if" check
     ///
