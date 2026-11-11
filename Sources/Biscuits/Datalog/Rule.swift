@@ -49,14 +49,26 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
         self = parser.rules[0]
     }
 
-    init(proto: Biscuit_Format_Schema_Rule, interner: InternmentTable) throws {
+    init(
+        proto: Biscuit_Format_Schema_Rule,
+        interner: InternmentTable,
+        limits: Biscuit.DeserializationLimits.PerBlock
+    ) throws {
         guard proto.hasHead else {
             throw Biscuit.ValidationError.missingRuleHead
         }
-        self.head = try Predicate(proto: proto.head, interner: interner)
-        self.bodyPredicates = try proto.body.map { try Predicate(proto: $0, interner: interner) }
-        self.expressions = try proto.expressions.map { try Expression(proto: $0, interner: interner) }
-        self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner) }
+        guard proto.body.count <= limits.maximumPredicatesPerBody else {
+            throw Biscuit.DeserializationLimitError.tooManyPredicates
+        }
+        guard proto.expressions.count <= limits.maximumExpressionsPerBody else {
+            throw Biscuit.DeserializationLimitError.tooManyExpressions
+        }
+        self.head = try Predicate(proto: proto.head, interner: interner, limits: limits)
+        self.bodyPredicates = try proto.body.map { try Predicate(proto: $0, interner: interner, limits: limits) }
+        self.expressions = try proto.expressions.map {
+            try Expression(proto: $0, interner: interner, limits: limits)
+        }
+        self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner, limits: limits) }
         if !self.head.terms.allSatisfy({ term in
             term.isConcrete || self.bodyPredicates.contains(where: { $0.terms.contains(term) })
         }) {

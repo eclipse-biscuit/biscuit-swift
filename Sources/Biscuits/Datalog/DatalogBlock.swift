@@ -136,13 +136,38 @@ extension Biscuit {
             return try proto.serializedData()
         }
 
-        init(serializedData data: Data, _ interner: inout InternmentTable) throws {
+        init(
+            serializedData data: Data,
+            limits: Biscuit.DeserializationLimits.PerBlock,
+            _ interner: inout InternmentTable
+        ) throws {
+            guard data.count <= limits.maximumBlockSize else {
+                throw DeserializationLimitError.blockTooLarge
+            }
             let proto = try Biscuit_Format_Schema_Block(serializedBytes: data)
             guard proto.hasVersion else {
                 throw Biscuit.ValidationError.missingVersion
             }
             guard proto.version >= 3 && proto.version <= 6 else {
                 throw Biscuit.ValidationError.invalidVersion
+            }
+            guard proto.facts.count <= limits.maximumFacts else {
+                throw DeserializationLimitError.tooManyFacts
+            }
+            guard proto.checks.count <= limits.maximumChecks else {
+                throw DeserializationLimitError.tooManyChecks
+            }
+            guard proto.rules.count <= limits.maximumRules else {
+                throw DeserializationLimitError.tooManyRules
+            }
+            guard proto.symbols.count <= limits.maximumSymbols else {
+                throw DeserializationLimitError.tooManySymbols
+            }
+            guard proto.publicKeys.count <= limits.maximumPublicKeys else {
+                throw DeserializationLimitError.tooManyPublicKeys
+            }
+            guard proto.context.utf8.count <= limits.maximumContextLength else {
+                throw DeserializationLimitError.contextTooLong
             }
             let symbols = proto.symbols
             let publicKeys = proto.publicKeys.map { Biscuit.ThirdPartyKey(proto: $0) }
@@ -152,10 +177,10 @@ extension Biscuit {
             } else {
                 self.context = nil
             }
-            self.checks = try proto.checks.map { try Check(proto: $0, interner: interner) }
-            self.facts = try proto.facts.map { try Fact(proto: $0.predicate, interner: interner) }
-            self.rules = try proto.rules.map { try Rule(proto: $0, interner: interner) }
-            self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner) }
+            self.checks = try proto.checks.map { try Check(proto: $0, interner: interner, limits: limits) }
+            self.facts = try proto.facts.map { try Fact(proto: $0.predicate, interner: interner, limits: limits) }
+            self.rules = try proto.rules.map { try Rule(proto: $0, interner: interner, limits: limits) }
+            self.trusted = try proto.scope.map { try TrustedScope(proto: $0, interner: interner, limits: limits) }
         }
     }
 }

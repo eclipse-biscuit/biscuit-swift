@@ -129,7 +129,7 @@ extension Biscuit {
                 throw ValidationError.missingExternalSignature
             }
             var interner = InternmentTable()
-            self.payload = try DatalogBlock(serializedData: proto.payload, &interner)
+            self.payload = try DatalogBlock(serializedData: proto.payload, limits: .allowEverything, &interner)
             self.serializedPayload = proto.payload
             self.externalSignature = try Block.ExternalSignature(proto: proto.externalSignature)
         }

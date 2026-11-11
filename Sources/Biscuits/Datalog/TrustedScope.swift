@@ -11,6 +11,45 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
     }
     let wrapped: Wrapped
 
+    /// The kind of a TrustedScope
+    public struct Kind: Sendable, Hashable, CustomStringConvertible {
+        enum Wrapped: Hashable {
+            case authority
+            case previous
+            case publicKey(Biscuit.SigningAlgorithm)
+        }
+        let wrapped: Wrapped
+
+        init(wrapped: Wrapped) {
+            self.wrapped = wrapped
+        }
+
+        /// The kind of a scope trusting the authority block
+        public static var authority: Kind { Kind(wrapped: .authority) }
+        /// The kind of a scope trusting the previous blocks
+        public static var previous: Kind { Kind(wrapped: .previous) }
+        /// The kind of a scope trusting any public key which uses the given algorithm
+        public static func publicKey(_ algorithm: Biscuit.SigningAlgorithm) -> Kind {
+            Kind(wrapped: .publicKey(algorithm))
+        }
+
+        public var description: String {
+            switch self.wrapped {
+            case .authority: "authority"
+            case .previous: "previous"
+            case .publicKey(let algorithm): "\(algorithm) public key"
+            }
+        }
+    }
+
+    var kind: Kind {
+        switch self.wrapped {
+        case .authority: .authority
+        case .previous: .previous
+        case .publicKey(let key): .publicKey(key.algorithm)
+        }
+    }
+
     init(_ wrapped: Wrapped) {
         self.wrapped = wrapped
     }
@@ -30,7 +69,11 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
         self.wrapped = try .publicKey(Biscuit.ThirdPartyKey(algorithm: algorithm, hexString: hexString))
     }
 
-    init(proto: Biscuit_Format_Schema_Scope, interner: InternmentTable) throws {
+    init(
+        proto: Biscuit_Format_Schema_Scope,
+        interner: InternmentTable,
+        limits: Biscuit.DeserializationLimits.PerBlock
+    ) throws {
         self.wrapped =
             switch proto.content {
             case .scopeType(.authority): .authority
@@ -38,6 +81,11 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
             case .publicKey(let key): try .publicKey(interner.lookupPublicKey(key))
             case .none: throw Biscuit.ValidationError.missingScope
             }
+        if let allowedScopes = limits.allowedTrustedScopes {
+            guard allowedScopes.contains(self.kind) else {
+                throw Biscuit.DeserializationLimitError.trustedScopeNotAllowed
+            }
+        }
     }
 
     static func publicKey<Key: Biscuit.PublicKey>(_ key: Key) -> TrustedScope {

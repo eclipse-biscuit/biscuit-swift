@@ -18,13 +18,56 @@ public struct MapKey: MapKeyConvertible, ValueConvertible, TermConvertible, Expr
     }
     let wrapped: Wrapped
 
-    init(proto: Biscuit_Format_Schema_MapKey, interner: InternmentTable) throws {
-        self.wrapped =
-            switch proto.content {
-            case .integer(let i): .integer(i)
-            case .string(let s): try .string(interner.lookupSymbol(s))
-            case .none: throw Biscuit.ValidationError.missingTerm
+    /// The kind of a MapKey
+    public struct Kind: Sendable, Hashable, CustomStringConvertible {
+        enum Wrapped: Hashable { case integer, string }
+        let wrapped: Wrapped
+
+        init?(content: Biscuit_Format_Schema_MapKey.OneOf_Content?) {
+            switch content {
+            case .integer: self.wrapped = .integer
+            case .string: self.wrapped = .string
+            case .none: return nil
             }
+        }
+
+        init(wrapped: Wrapped) {
+            self.wrapped = wrapped
+        }
+
+        /// The kind of an integer MapKey
+        public static var integer: Kind { Kind(wrapped: .integer) }
+        /// The kind of a string MapKey
+        public static var string: Kind { Kind(wrapped: .string) }
+
+        public var description: String {
+            switch self.wrapped {
+            case .integer: "integer"
+            case .string: "string"
+            }
+        }
+    }
+
+    init(
+        proto: Biscuit_Format_Schema_MapKey,
+        interner: InternmentTable,
+        limits: Biscuit.DeserializationLimits.PerBlock
+    ) throws {
+        if let allowedKinds = limits.allowedMapKeyTypes, let kind = Kind(content: proto.content) {
+            guard allowedKinds.contains(kind) else {
+                throw Biscuit.DeserializationLimitError.mapKeyTypeNotAllowed
+            }
+        }
+        switch proto.content {
+        case .integer(let i): self.wrapped = .integer(i)
+        case .string(let s):
+            let string = try interner.lookupSymbol(s)
+            guard string.utf8.count <= limits.maximumStringLength else {
+                throw Biscuit.DeserializationLimitError.stringTooLong
+            }
+            self.wrapped = .string(string)
+        case .none: throw Biscuit.ValidationError.missingTerm
+        }
     }
 
     /// An integer MapKey

@@ -20,9 +20,18 @@ enum OpBinary: Sendable, Hashable {
     case ffi(String)
     case tryOr
 
-    init(proto: Biscuit_Format_Schema_OpBinary, interner: InternmentTable) throws {
+    init(
+        proto: Biscuit_Format_Schema_OpBinary,
+        interner: InternmentTable,
+        limits: Biscuit.DeserializationLimits.PerBlock
+    ) throws {
         guard proto.hasKind else {
             throw Biscuit.ValidationError.missingOp
+        }
+        if let allowedOperations = limits.allowedBinaryOperations {
+            guard allowedOperations.contains(Biscuit.BinaryOperation(kind: proto.kind)) else {
+                throw Biscuit.DeserializationLimitError.binaryOperationNotAllowed
+            }
         }
         switch proto.kind {
         case .greaterThan: self = .gt
@@ -57,7 +66,16 @@ enum OpBinary: Sendable, Hashable {
             guard proto.hasFfiName else {
                 throw Biscuit.ValidationError.missingFFI
             }
-            self = try .ffi(interner.lookupSymbol(proto.ffiName))
+            let name = try interner.lookupSymbol(proto.ffiName)
+            guard name.utf8.count <= limits.maximumNameLength else {
+                throw Biscuit.DeserializationLimitError.nameTooLong
+            }
+            if let allowedFunctions = limits.allowedBinaryExternalFunctions {
+                guard allowedFunctions.contains(name) else {
+                    throw Biscuit.DeserializationLimitError.externalFunctionNotAllowed
+                }
+            }
+            self = .ffi(name)
         case .tryOr: self = .tryOr
         }
     }

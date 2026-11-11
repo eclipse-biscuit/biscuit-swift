@@ -3,6 +3,8 @@
 - Add a constructor for `RootKeyID` from `UInt32`
 - Add support for maximum steps to `RunLimits`
 - Use a `UInt64` as the internal representation of dates
+- Add `DeserializationLimits` to limit what sorts of tokens are accepted; the limits are checked
+  during deserialization and can differ between the authority block and attenuations
 
 # `2.0.1`
 

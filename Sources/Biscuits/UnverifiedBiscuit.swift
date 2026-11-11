@@ -25,12 +25,31 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     ///
     /// - Parameters:
     ///   - serializedData: the serialized representation of the Biscuit
+    ///   - limits: limits on the features and sizes this Biscuit may contain
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if the
     /// serializedData is not in the proper format
-    public init(serializedData: Data) throws {
+    public init(serializedData: Data, limitedBy limits: Biscuit.DeserializationLimits = .allowEverything) throws {
+        guard serializedData.count <= limits.maximumTokenSize else {
+            throw Biscuit.DeserializationLimitError.tokenTooLarge
+        }
         let proto = try Biscuit_Format_Schema_Biscuit(serializedBytes: serializedData)
         guard proto.hasAuthority else {
             throw Biscuit.ValidationError.missingAuthority
+        }
+        // The authority block counts towards the maximum
+        guard proto.blocks.count + 1 <= limits.maximumBlocks else {
+            throw Biscuit.DeserializationLimitError.tooManyBlocks
+        }
+        switch proto.proof.content {
+        case .finalSignature:
+            guard limits.allowSealedTokens else {
+                throw Biscuit.DeserializationLimitError.sealedTokensNotAllowed
+            }
+        case .nextSecret:
+            guard limits.allowUnsealedTokens else {
+                throw Biscuit.DeserializationLimitError.unsealedTokensNotAllowed
+            }
+        case .none: break
         }
         if proto.hasRootKeyID {
             self.rootKeyID = Biscuit.RootKeyID(proto.rootKeyID)
@@ -38,10 +57,18 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
             self.rootKeyID = nil
         }
         var interner = InternmentTable()
-        self.authority = try Biscuit.Block.unverifiedAuthority(proto: proto.authority, interner: &interner)
+        self.authority = try Biscuit.Block.unverifiedAuthority(
+            proto: proto.authority,
+            limits: limits,
+            interner: &interner
+        )
         var lastBlock = self.authority
         self.attenuations = try proto.blocks.map {
-            lastBlock = try Biscuit.Block.unverifiedAttenuation(proto: $0, interner: &interner)
+            lastBlock = try Biscuit.Block.unverifiedAttenuation(
+                proto: $0,
+                limits: limits,
+                interner: &interner
+            )
             return lastBlock
         }
         self.interner = interner
@@ -53,11 +80,12 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
     ///
     /// - Parameters:
     ///   - base64URLEncoded: the base64url representation of the Biscuit
+    ///   - limits: limits on the features and sizes this Biscuit may contain
     /// - Throws: Validation may throw a protobuf error or a `ValidationError` if base64url or the
     /// underlying data is not in the proper format
-    public init(base64URLEncoded: String) throws {
+    public init(base64URLEncoded: String, limitedBy limits: Biscuit.DeserializationLimits = .allowEverything) throws {
         let data = try Biscuits.base64URLDecoded(base64URLEncoded)
-        try self.init(serializedData: data)
+        try self.init(serializedData: data, limitedBy: limits)
     }
 
     init(
