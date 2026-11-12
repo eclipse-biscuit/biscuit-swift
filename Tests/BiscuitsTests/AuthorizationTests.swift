@@ -242,7 +242,6 @@ final class AuthorizationTests: XCTestCase {
 
     }
 
-    #if Regex
     func testRegexConstraint() throws {
         let biscuit = try self.loadBiscuit(from: "test014_regex_constraint")
         try biscuit.authorize(
@@ -263,22 +262,6 @@ final class AuthorizationTests: XCTestCase {
         }
         XCTAssert(false)
     }
-    #else
-    func testRegexConstraint() throws {
-        let biscuit = try self.loadBiscuit(from: "test014_regex_constraint")
-        do {
-            try biscuit.authorize(
-                using: """
-                        resource("file123.txt");
-                        allow if true;
-                    """
-            )
-        } catch let error as Biscuit.EvaluationError where error == Biscuit.EvaluationError.regexUnsupported {
-            return
-        }
-        XCTAssert(false)
-    }
-    #endif
 
     func testMultiQueriesCaveats() throws {
         let biscuit = try self.loadBiscuit(from: "test015_multi_queries_caveats")
@@ -300,12 +283,10 @@ final class AuthorizationTests: XCTestCase {
         XCTAssert(false)
     }
 
-    #if Regex
     func testExpressionSyntax() throws {
         let biscuit = try self.loadBiscuit(from: "test017_expressions")
         try biscuit.authorize(using: "allow if true;")
     }
-    #endif
 
     func testUnboundVariables() throws {
         do {
