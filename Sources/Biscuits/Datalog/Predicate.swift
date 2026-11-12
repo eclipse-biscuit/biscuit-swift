@@ -20,6 +20,7 @@ public struct Predicate: Sendable, Hashable, CustomStringConvertible {
         self.terms = finalTerms
     }
 
+    #if DatalogParser
     /// Construct a predicate by parsing a String of Datalog
     /// - Parameters:
     ///   - datalog: the datalog that will be parsed
@@ -27,6 +28,7 @@ public struct Predicate: Sendable, Hashable, CustomStringConvertible {
     public init(_ datalog: String) throws {
         self = try Parser.predicate(using: datalog)
     }
+    #endif
 
     init(_ name: String, _ terms: [Term]) {
         self.name = name

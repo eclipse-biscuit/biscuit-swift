@@ -16,6 +16,13 @@ let package = Package(
     products: [
         .library(name: "Biscuits", targets: ["Biscuits"]),
     ],
+    traits: [
+        .trait(
+            name: "DatalogParser",
+            description: "Support constructing Datalog by parsing Strings"
+        ),
+        .default(enabledTraits: ["Regex", "DatalogParser"]),
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0" ..< "5.0.0"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.26.0"),

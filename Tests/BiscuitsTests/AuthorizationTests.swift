@@ -23,6 +23,7 @@ final class AuthorizationTests: XCTestCase {
         return try Biscuit(serializedData: biscuitData) { _ in self.rootPublicKey }
     }
 
+    #if DatalogParser
     func testBasicToken() throws {
         let biscuit = try self.loadBiscuit(from: "test001_basic")
         do {
@@ -41,6 +42,7 @@ final class AuthorizationTests: XCTestCase {
         }
         XCTAssert(false)
     }
+    #endif
 
     func testBasicTokenDSL() throws {
         let biscuit = try self.loadBiscuit(from: "test001_basic")
@@ -108,6 +110,7 @@ final class AuthorizationTests: XCTestCase {
         XCTAssert(false)
     }
 
+    #if DatalogParser
     func testScopedRules() throws {
         let biscuit = try self.loadBiscuit(from: "test007_scoped_rules")
         do {
@@ -241,7 +244,10 @@ final class AuthorizationTests: XCTestCase {
         XCTAssert(false)
 
     }
+    #endif
 
+
+    #if DatalogParser
     func testRegexConstraint() throws {
         let biscuit = try self.loadBiscuit(from: "test014_regex_constraint")
         try biscuit.authorize(
@@ -263,6 +269,9 @@ final class AuthorizationTests: XCTestCase {
         XCTAssert(false)
     }
 
+    #endif
+
+    #if DatalogParser
     func testMultiQueriesCaveats() throws {
         let biscuit = try self.loadBiscuit(from: "test015_multi_queries_caveats")
         try biscuit.authorize(
@@ -282,12 +291,17 @@ final class AuthorizationTests: XCTestCase {
         }
         XCTAssert(false)
     }
+    #endif
 
+
+    #if DatalogParser
     func testExpressionSyntax() throws {
         let biscuit = try self.loadBiscuit(from: "test017_expressions")
         try biscuit.authorize(using: "allow if true;")
     }
+    #endif
 
+    #if DatalogParser
     func testUnboundVariables() throws {
         do {
             let biscuit = try self.loadBiscuit(from: "test018_unbound_variables_in_rule")
@@ -456,6 +470,7 @@ final class AuthorizationTests: XCTestCase {
         }
         XCTAssert(false)
     }
+    #endif
 
     func testTypeOf() throws {
         let biscuit = try self.loadBiscuit(from: "test033_typeof")
@@ -467,6 +482,7 @@ final class AuthorizationTests: XCTestCase {
         try biscuit.authorize { Policy.alwaysAllow }
     }
 
+    #if DatalogParser
     func testFfiUnspecified() throws {
         let biscuit = try self.loadBiscuit(from: "test035_ffi")
         do {
@@ -477,6 +493,7 @@ final class AuthorizationTests: XCTestCase {
         }
         XCTAssert(false)
     }
+    #endif
 
     func testSecP256R1() throws {
         let biscuit = try self.loadBiscuit(from: "test036_secp256r1")
@@ -496,6 +513,7 @@ final class AuthorizationTests: XCTestCase {
         }
     }
 
+    #if DatalogParser
     func testTryOp() throws {
         let biscuit = try self.loadBiscuit(from: "test038_try_op")
         try biscuit.authorize { Policy.alwaysAllow }
@@ -506,6 +524,7 @@ final class AuthorizationTests: XCTestCase {
         }
         XCTAssert(false)
     }
+    #endif
 }
 
 func hexDecode(_ string: String) -> Data? {

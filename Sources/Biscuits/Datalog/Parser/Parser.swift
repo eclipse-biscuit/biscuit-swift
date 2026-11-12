@@ -2,6 +2,7 @@
  * Copyright (c) 2025 Contributors to the Eclipse Foundation.
  * SPDX-License-Identifier: Apache-2.0
  */
+#if DatalogParser
 struct Parser {
     var lexer: Lexer
     var currentToken: Token?
@@ -702,3 +703,4 @@ struct Parser {
         self.currentToken = nil
     }
 }
+#endif

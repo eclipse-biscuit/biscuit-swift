@@ -2,6 +2,7 @@
  * Copyright (c) 2025 Contributors to the Eclipse Foundation.
  * SPDX-License-Identifier: Apache-2.0
  */
+#if DatalogParser
 #if canImport(FoundationEssentials)
 import FoundationEssentials
 #else
@@ -137,15 +138,15 @@ nonisolated(unsafe) let regexes: [(Regex, (Substring) throws -> Token?)] = [
 
     // public key:
     (
-        /ed25519\/([\da-f]+)/,
+        /ed25519\/([\da-fA-F]+)/,
         { data in
-            .publicKey(Biscuit.ThirdPartyKey(dataRepresentation: hexDecode(data)!, algorithm: .ed25519))
+            hexDecode(data).map { .publicKey(Biscuit.ThirdPartyKey(dataRepresentation: $0, algorithm: .ed25519)) }
         }
     ),
     (
-        /secp256r1\/([\da-f]+)/,
+        /secp256r1\/([\da-fA-F]+)/,
         { data in
-            .publicKey(Biscuit.ThirdPartyKey(dataRepresentation: hexDecode(data)!, algorithm: .secp256r1))
+            hexDecode(data).map { .publicKey(Biscuit.ThirdPartyKey(dataRepresentation: $0, algorithm: .secp256r1)) }
         }
     ),
 
@@ -179,7 +180,7 @@ func nameKeywordOrBytes(_ data: Substring) -> Token? {
         return kw
     }
 
-    if let match = try? /hex:([0-9a-fA-F]+)/.wholeMatch(in: data) {
+    if let match = try? /hex:([0-9a-fA-F]*)/.wholeMatch(in: data) {
         if let hex = hexDecode(match.1) {
             return .bytes(hex)
         } else {
@@ -190,38 +191,6 @@ func nameKeywordOrBytes(_ data: Substring) -> Token? {
     return .name(data)
 }
 
-func hexDecode(_ string: Substring) -> Data? {
-    if string.count % 2 != 0 || string.count == 0 {
-        return nil
-    }
-
-    let stringBytes: Data = string.data(using: String.Encoding.utf8)!
-    var bytes = Data()
-
-    for i in stride(from: stringBytes.startIndex, to: stringBytes.endIndex - 1, by: 2) {
-        let char1 = stringBytes[i]
-        let char2 = stringBytes[i + 1]
-
-        bytes.append(htoi(char1)! << 4 + htoi(char2)!)
-    }
-
-    return bytes
-}
-
-func htoi(_ value: UInt8) -> UInt8? {
-    let char0 = UInt8(UnicodeScalar("0").value)
-    let charA = UInt8(UnicodeScalar("a").value)
-
-    switch value {
-    case char0...char0 + 9:
-        return value - char0
-    case charA...charA + 5:
-        return value - charA + 10
-    default:
-        return nil
-    }
-}
-
 func date(_ s: Substring) -> Token? {
     if let date = try? Date.ISO8601FormatStyle().parse(String(s)) {
         return .date(date)
@@ -229,3 +198,4 @@ func date(_ s: Substring) -> Token? {
         return nil
     }
 }
+#endif

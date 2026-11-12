@@ -8,6 +8,7 @@ import XCTest
 @testable import Biscuits
 
 final class BiscuitsTests: XCTestCase {
+    #if DatalogParser
     func testDatalogBlockWithFact() throws {
         let block = try Biscuit.DatalogBlock("foo(1234);")
         XCTAssertEqual(block.context, nil)
@@ -305,6 +306,7 @@ final class BiscuitsTests: XCTestCase {
         } catch {}
         try attenuatedBiscuit.authorize(using: "group(2); allow if true;")
     }
+    #endif
 
     func testBase64URLEncoding() throws {
         // Generated with biscuit-cli by running:

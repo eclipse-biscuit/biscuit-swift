@@ -54,6 +54,7 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
         self.wrapped = wrapped
     }
 
+    #if DatalogParser
     /// Construct a TrustedScope by parsing a String of Datalog
     /// - Parameters:
     ///   - datalog: the datalog that will be parsed
@@ -62,6 +63,7 @@ public struct TrustedScope: Equatable, Sendable, Hashable, CustomStringConvertib
         var parser = Parser(datalog)
         self = try parser.parseScope()
     }
+    #endif
 
     /// Construct a TrustedScope from an algorithm and its hex-encoded representation
     /// Throws: Throws a ValidationError if hexString is not a valid hex-encoded string
@@ -152,10 +154,12 @@ public struct Trusting {
         self.trusted = trusted
     }
 
+    #if DatalogParser
     /// Construct a Trusting statement by parsing a String as Datalog
     /// - Parameter datalog: the Datalog of this Trusting statement
     public init(_ datalog: String) throws {
         let parser = try Parser.forTrusting(using: datalog)
         self.trusted = parser.origins
     }
+    #endif
 }

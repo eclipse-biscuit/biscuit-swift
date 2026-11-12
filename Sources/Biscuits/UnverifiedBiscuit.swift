@@ -171,6 +171,7 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
         )
     }
 
+    #if DatalogParser
     /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
     /// scope. This Biscuit remains unattenuated.
     ///
@@ -215,6 +216,7 @@ public struct UnverifiedBiscuit: Sendable, Hashable {
             algorithm: algorithm,
         )
     }
+    #endif
 
     /// Attenuate this Biscuit, producing a new Biscuit which has been attenuated to a smaller
     /// scope. This Biscuit remains unattenuated.
