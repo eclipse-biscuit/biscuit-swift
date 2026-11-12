@@ -21,7 +21,7 @@ let package = Package(
             name: "DatalogParser",
             description: "Support constructing Datalog by parsing Strings"
         ),
-        .default(enabledTraits: ["Regex", "DatalogParser"]),
+        .default(enabledTraits: ["DatalogParser"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0" ..< "5.0.0"),
