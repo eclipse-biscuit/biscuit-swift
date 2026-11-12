@@ -246,7 +246,6 @@ final class AuthorizationTests: XCTestCase {
     }
     #endif
 
-    #if Regex
     #if DatalogParser
     func testRegexConstraint() throws {
         let biscuit = try self.loadBiscuit(from: "test014_regex_constraint")
@@ -268,24 +267,7 @@ final class AuthorizationTests: XCTestCase {
         }
         XCTAssert(false)
     }
-    #endif
-    #else
-    #if DatalogParser
-    func testRegexConstraint() throws {
-        let biscuit = try self.loadBiscuit(from: "test014_regex_constraint")
-        do {
-            try biscuit.authorize(
-                using: """
-                        resource("file123.txt");
-                        allow if true;
-                    """
-            )
-        } catch let error as Biscuit.EvaluationError where error == Biscuit.EvaluationError.regexUnsupported {
-            return
-        }
-        XCTAssert(false)
-    }
-    #endif
+
     #endif
 
     #if DatalogParser
@@ -310,13 +292,11 @@ final class AuthorizationTests: XCTestCase {
     }
     #endif
 
-    #if Regex
     #if DatalogParser
     func testExpressionSyntax() throws {
         let biscuit = try self.loadBiscuit(from: "test017_expressions")
         try biscuit.authorize(using: "allow if true;")
     }
-    #endif
     #endif
 
     #if DatalogParser
