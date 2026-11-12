@@ -67,6 +67,7 @@ extension Biscuit {
             self.limits = limitedBy
         }
 
+        #if DatalogParser
         /// Construct an Authorizer from a String of Datalog
         ///
         /// - Parameter datalog: the Datalog contents of this Authorizer as a String
@@ -83,6 +84,7 @@ extension Biscuit {
                 throw Biscuit.EvaluationError.authorizerWithoutPolicy
             }
         }
+        #endif
 
         public static func buildBlock(_ authorizer: Authorizer...) -> Authorizer {
             var auth = Authorizer()

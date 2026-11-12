@@ -50,6 +50,7 @@ extension Biscuit {
             self.context = context
         }
 
+        #if DatalogParser
         /// Construct a DatalogBlock from a String of Datalog
         ///
         /// - Parameter context: the context that will be included with this DatalogBlock
@@ -62,6 +63,7 @@ extension Biscuit {
             self.trusted = parser.origins
             self.context = context
         }
+        #endif
 
         public static func buildBlock(_ block: DatalogBlock...) -> DatalogBlock {
             DatalogBlock(

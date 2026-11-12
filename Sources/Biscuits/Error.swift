@@ -272,6 +272,11 @@ extension Biscuit {
     /// An error that occurred while parsing or constructing Datalog
     public struct DatalogError: Sendable, Hashable, Error, CustomStringConvertible {
         internal enum ErrorCode: Hashable {
+            case variableInFact
+            case setInSet
+            case duplicateMapKey
+            case invalidHexData
+            #if DatalogParser
             case errorInLexing
             case missingSemicolon
             case missingLeftParen
@@ -285,14 +290,11 @@ extension Biscuit {
             case unknownScope(Token)
             case unknownTerm(Token)
             case unexpectedEndOfCode
-            case variableInFact
             case variableInHeadAlone
             case chainedComparisonsWithoutParens
             case invalidMapKey(Value)
             case mapMissingValue
-            case setInSet
-            case duplicateMapKey
-            case invalidHexData
+            #endif
         }
         let code: ErrorCode
 
@@ -300,18 +302,20 @@ extension Biscuit {
             self.code = code
         }
 
+        static var variableInFact: Self { Self(.variableInFact) }
+        static var setInSet: Self { Self(.setInSet) }
+        static var duplicateMapKey: Self { Self(.duplicateMapKey) }
+        static var invalidHexData: Self { Self(.invalidHexData) }
+
+        #if DatalogParser
         static var errorInLexing: Self { Self(.errorInLexing) }
         static var missingSemicolon: Self { Self(.missingSemicolon) }
         static var missingLeftParen: Self { Self(.missingLeftParen) }
         static var missingRightParen: Self { Self(.missingRightParen) }
         static var unexpectedEndOfCode: Self { Self(.unexpectedEndOfCode) }
-        static var variableInFact: Self { Self(.variableInFact) }
         static var variableInHeadAlone: Self { Self(.variableInHeadAlone) }
         static var chainedComparisonsWithoutParens: Self { Self(.chainedComparisonsWithoutParens) }
         static var mapMissingValue: Self { Self(.mapMissingValue) }
-        static var setInSet: Self { Self(.setInSet) }
-        static var duplicateMapKey: Self { Self(.duplicateMapKey) }
-        static var invalidHexData: Self { Self(.invalidHexData) }
 
         static func unknownBlockElement(_ token: Token) -> Self {
             Self(.unknownBlockElement(token))
@@ -340,9 +344,15 @@ extension Biscuit {
         static func invalidMapKey(_ value: Value) -> Self {
             Self(.invalidMapKey(value))
         }
+        #endif
 
         public var description: String {
             switch self.code {
+            case .variableInFact: "fact contained a variable"
+            case .setInSet: "set contains a set"
+            case .duplicateMapKey: "map contains duplicate key"
+            case .invalidHexData: "invalid hexadecimal string"
+            #if DatalogParser
             case .errorInLexing: "lexing error occurred while parsing Datalog"
             case .missingSemicolon: "missing semicolon in Datalog"
             case .missingLeftParen: "missing left parenthesis in Datalog"
@@ -356,14 +366,11 @@ extension Biscuit {
             case .unknownScope(let token): "unknown trusting scope: \(token)"
             case .unknownTerm(let token): "unknown term: \(token)"
             case .unexpectedEndOfCode: "unexpected end of Datalog code"
-            case .variableInFact: "fact contained a variable"
             case .variableInHeadAlone: "variable only present in head of a rule"
             case .chainedComparisonsWithoutParens: "chaining comparisons in Datalog requires parentheses"
             case .invalidMapKey(let v): "invalid map key type: \(v.type)"
             case .mapMissingValue: "map is missing value"
-            case .setInSet: "set contains a set"
-            case .duplicateMapKey: "map contains duplicate key"
-            case .invalidHexData: "invalid hexadecimal string"
+            #endif
             }
         }
     }

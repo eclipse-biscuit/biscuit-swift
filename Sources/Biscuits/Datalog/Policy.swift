@@ -28,6 +28,7 @@ public struct Policy: Sendable, Hashable, CustomStringConvertible {
         }
     }
 
+    #if DatalogParser
     /// Construct a policy by parsing a String of Datalog
     /// - Parameters:
     ///   - datalog: the datalog that will be parsed
@@ -36,6 +37,7 @@ public struct Policy: Sendable, Hashable, CustomStringConvertible {
         let parser = try Parser.forPolicy(using: datalog)
         self = parser.policies[0]
     }
+    #endif
 
     /// Construct an "allow if" policy
     ///

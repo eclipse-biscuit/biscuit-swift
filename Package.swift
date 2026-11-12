@@ -18,7 +18,11 @@ let package = Package(
     ],
     traits: [
         .trait(name: "Regex", description: "Support the `matches` operator using Swift Regex"),
-        .default(enabledTraits: ["Regex"]),
+        .trait(
+            name: "DatalogParser",
+            description: "Support constructing Datalog by parsing Strings"
+        ),
+        .default(enabledTraits: ["Regex", "DatalogParser"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-crypto.git", "1.0.0" ..< "5.0.0"),

@@ -54,7 +54,7 @@ final class DeserializationLimitsTests: XCTestCase {
         for limitCase in self.blockLimitCases {
             let block = try limitCase.block()
             let inAuthority = try Biscuit(authorityBlock: block, rootKey: self.rootKey).serializedData()
-            let inAttenuation = try Biscuit(authorityBlock: Biscuit.DatalogBlock(""), rootKey: self.rootKey)
+            let inAttenuation = try Biscuit(rootKey: self.rootKey) {}
                 .attenuated(using: block)
                 .serializedData()
             let property = limitCase.property
@@ -101,7 +101,7 @@ final class DeserializationLimitsTests: XCTestCase {
 
     var tokenLimitCases: [TokenLimitCase] {
         let rootKey = self.rootKey
-        let biscuit = { try Biscuit(authorityBlock: "fact(1);", rootKey: rootKey) }
+        let biscuit = { try Biscuit(rootKey: rootKey) { Fact("fact", 1) } }
         return [
             TokenLimitCase(
                 property: "allowAttenuationsWithExternalSignatures",
@@ -109,7 +109,7 @@ final class DeserializationLimitsTests: XCTestCase {
                 expectedError: .attenuationsWithExternalSignaturesNotAllowed,
                 token: {
                     try biscuit()
-                        .attenuated(using: "check if true;", thirdPartyKey: Curve25519.Signing.PrivateKey())
+                        .attenuated(thirdPartyKey: Curve25519.Signing.PrivateKey()) { Check.checkIf { true } }
                         .serializedData()
                 }
             ),
@@ -117,7 +117,7 @@ final class DeserializationLimitsTests: XCTestCase {
                 property: "allowAttenuationsWithoutExternalSignatures",
                 restrict: { $0.allowAttenuationsWithoutExternalSignatures = false },
                 expectedError: .attenuationsWithoutExternalSignaturesNotAllowed,
-                token: { try biscuit().attenuated(using: "check if true;").serializedData() }
+                token: { try biscuit().attenuated { Check.checkIf { true } }.serializedData() }
             ),
             TokenLimitCase(
                 property: "allowSealedTokens",
@@ -141,7 +141,7 @@ final class DeserializationLimitsTests: XCTestCase {
                 property: "maximumBlocks",
                 restrict: { $0.maximumBlocks = 1 },
                 expectedError: .tooManyBlocks,
-                token: { try biscuit().attenuated(using: "check if true;").serializedData() }
+                token: { try biscuit().attenuated { Check.checkIf { true } }.serializedData() }
             ),
             TokenLimitCase(
                 property: "minimumSignatureVersion",
@@ -168,7 +168,7 @@ final class DeserializationLimitsTests: XCTestCase {
                 expectedError: .externalSigningAlgorithmNotAllowed,
                 token: {
                     try biscuit()
-                        .attenuated(using: "check if true;", thirdPartyKey: Curve25519.Signing.PrivateKey())
+                        .attenuated(thirdPartyKey: Curve25519.Signing.PrivateKey()) { Check.checkIf { true } }
                         .serializedData()
                 }
             ),
@@ -176,136 +176,153 @@ final class DeserializationLimitsTests: XCTestCase {
     }
 
     var blockLimitCases: [BlockLimitCase] {
-        let datalog = { (datalog: String) in { try Biscuit.DatalogBlock(datalog) } }
-        let trustedKey = Curve25519.Signing.PrivateKey().publicKey.rawRepresentation
-            .map { String(format: "%02hhx", $0) }
-            .joined()
+        func datalog(
+            @Biscuit.DatalogBlock _ block: @escaping () throws -> Biscuit.DatalogBlock
+        ) -> () throws -> Biscuit.DatalogBlock {
+            block
+        }
+        let trustedKey = Biscuit.ThirdPartyKey(key: Curve25519.Signing.PrivateKey().publicKey)
         return [
             BlockLimitCase(
                 property: "allowClosures",
                 restrict: { $0.allowClosures = false },
                 expectedError: .closuresNotAllowed,
-                block: datalog("check if [1].any($x -> $x == 1);")
+                // check if [1].any($x -> $x == 1);
+                block: datalog {
+                    Check.checkIf { Value.array(1).any(Closure("x", body: Term(variable: "x").equal(1))) }
+                }
             ),
             BlockLimitCase(
                 property: "maximumBlockSize",
                 restrict: { $0.maximumBlockSize = 10 },
                 expectedError: .blockTooLarge,
-                block: datalog("check if claim(\"YELLOW SUBMARINE\");")
+                block: datalog { Check.checkIf { Predicate("claim", "YELLOW SUBMARINE") } }
             ),
             BlockLimitCase(
                 property: "maximumFacts",
                 restrict: { $0.maximumFacts = 0 },
                 expectedError: .tooManyFacts,
-                block: datalog("fact(1);")
+                block: datalog { Fact("fact", 1) }
             ),
             BlockLimitCase(
                 property: "maximumRules",
                 restrict: { $0.maximumRules = 0 },
                 expectedError: .tooManyRules,
-                block: datalog("derived($x) <- fact($x);")
+                // derived($x) <- fact($x);
+                block: datalog {
+                    try Rule(head: Predicate("derived", Term(variable: "x"))) { Predicate("fact", Term(variable: "x")) }
+                }
             ),
             BlockLimitCase(
                 property: "maximumChecks",
                 restrict: { $0.maximumChecks = 0 },
                 expectedError: .tooManyChecks,
-                block: datalog("check if true;")
+                block: datalog { Check.checkIf { true } }
             ),
             BlockLimitCase(
                 property: "maximumSymbols",
                 restrict: { $0.maximumSymbols = 0 },
                 expectedError: .tooManySymbols,
-                block: datalog("fact(\"symbol\");")
+                block: datalog { Fact("fact", "symbol") }
             ),
             BlockLimitCase(
                 property: "maximumPublicKeys",
                 restrict: { $0.maximumPublicKeys = 0 },
                 expectedError: .tooManyPublicKeys,
-                block: datalog("check if true trusting ed25519/\(trustedKey);")
+                block: datalog { Check.checkIf(trusting: trustedKey) { true } }
             ),
             BlockLimitCase(
                 property: "maximumContextLength",
                 restrict: { $0.maximumContextLength = 2 },
                 expectedError: .contextTooLong,
-                block: { try Biscuit.DatalogBlock("fact(1);", context: "context") }
+                block: { Biscuit.DatalogBlock(context: "context") { Fact("fact", 1) } }
             ),
             BlockLimitCase(
                 property: "maximumQueriesPerCheck",
                 restrict: { $0.maximumQueriesPerCheck = 1 },
                 expectedError: .tooManyQueries,
-                block: datalog("check if true or false;")
+                // check if true or false; the DSL has no syntax for checks with multiple queries
+                block: datalog {
+                    Check(
+                        .checkIf,
+                        [
+                            Biscuit.Query([], [Value(true).expression], []),
+                            Biscuit.Query([], [Value(false).expression], []),
+                        ]
+                    )
+                }
             ),
             BlockLimitCase(
                 property: "maximumPredicatesPerBody",
                 restrict: { $0.maximumPredicatesPerBody = 0 },
                 expectedError: .tooManyPredicates,
-                block: datalog("check if fact(1);")
+                block: datalog { Check.checkIf { Predicate("fact", 1) } }
             ),
             BlockLimitCase(
                 property: "maximumExpressionsPerBody",
                 restrict: { $0.maximumExpressionsPerBody = 0 },
                 expectedError: .tooManyExpressions,
-                block: datalog("check if true;")
+                block: datalog { Check.checkIf { true } }
             ),
             BlockLimitCase(
                 property: "maximumOpsPerExpression",
                 restrict: { $0.maximumOpsPerExpression = 2 },
                 expectedError: .tooManyOps,
-                block: datalog("check if 1 == 1;")
+                block: datalog { Check.checkIf { Value(1).equal(1) } }
             ),
             BlockLimitCase(
                 property: "maximumTermsPerPredicate",
                 restrict: { $0.maximumTermsPerPredicate = 0 },
                 expectedError: .tooManyTerms,
-                block: datalog("fact(1);")
+                block: datalog { Fact("fact", 1) }
             ),
             BlockLimitCase(
                 property: "maximumNameLength",
                 restrict: { $0.maximumNameLength = 3 },
                 expectedError: .nameTooLong,
-                block: datalog("longname(1);")
+                block: datalog { Fact("longname", 1) }
             ),
             BlockLimitCase(
                 property: "maximumBytesLength",
                 restrict: { $0.maximumBytesLength = 0 },
                 expectedError: .bytesTooLong,
-                block: datalog("fact(hex:00);")
+                block: datalog { Fact("fact", Data([0x00])) }
             ),
             BlockLimitCase(
                 property: "maximumStringLength",
                 restrict: { $0.maximumStringLength = 0 },
                 expectedError: .stringTooLong,
-                block: datalog("fact(\"a\");")
+                block: datalog { Fact("fact", "a") }
             ),
             BlockLimitCase(
                 property: "maximumSetLength",
                 restrict: { $0.maximumSetLength = 0 },
                 expectedError: .setTooLong,
-                block: datalog("fact({1});")
+                block: datalog { try Fact("fact", Value.set(1)) }
             ),
             BlockLimitCase(
                 property: "maximumArrayLength",
                 restrict: { $0.maximumArrayLength = 0 },
                 expectedError: .arrayTooLong,
-                block: datalog("fact([1]);")
+                block: datalog { Fact("fact", Value.array(1)) }
             ),
             BlockLimitCase(
                 property: "maximumMapLength",
                 restrict: { $0.maximumMapLength = 0 },
                 expectedError: .mapTooLong,
-                block: datalog("fact({\"key\": 1});")
+                block: datalog { try Fact("fact", Value.map(("key", 1))) }
             ),
             BlockLimitCase(
                 property: "allowedBinaryOperations",
                 restrict: { $0.allowedBinaryOperations = [] },
                 expectedError: .binaryOperationNotAllowed,
-                block: datalog("check if 1 == 1;")
+                block: datalog { Check.checkIf { Value(1).equal(1) } }
             ),
             BlockLimitCase(
                 property: "allowedUnaryOperations",
                 restrict: { $0.allowedUnaryOperations = [] },
                 expectedError: .unaryOperationNotAllowed,
-                block: datalog("check if !false;")
+                block: datalog { Check.checkIf { Value(false).negated } }
             ),
             BlockLimitCase(
                 property: "allowedUnaryExternalFunctions",
@@ -334,25 +351,25 @@ final class DeserializationLimitsTests: XCTestCase {
                 property: "allowedTermTypes",
                 restrict: { $0.allowedTermTypes = [] },
                 expectedError: .termTypeNotAllowed,
-                block: datalog("fact(1);")
+                block: datalog { Fact("fact", 1) }
             ),
             BlockLimitCase(
                 property: "allowedMapKeyTypes",
                 restrict: { $0.allowedMapKeyTypes = [] },
                 expectedError: .mapKeyTypeNotAllowed,
-                block: datalog("fact({\"key\": 1});")
+                block: datalog { try Fact("fact", Value.map(("key", 1))) }
             ),
             BlockLimitCase(
                 property: "allowedTrustedScopes",
                 restrict: { $0.allowedTrustedScopes = [] },
                 expectedError: .trustedScopeNotAllowed,
-                block: datalog("check if true trusting previous;")
+                block: datalog { Check.checkIf(trusting: TrustedScope.previous) { true } }
             ),
             BlockLimitCase(
                 property: "allowedCheckKinds",
                 restrict: { $0.allowedCheckKinds = [] },
                 expectedError: .checkKindNotAllowed,
-                block: datalog("check if true;")
+                block: datalog { Check.checkIf { true } }
             ),
         ]
     }

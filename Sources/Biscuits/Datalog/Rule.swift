@@ -40,6 +40,7 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
         self.trusted = scopes
     }
 
+    #if DatalogParser
     /// Construct a rule by parsing a String of Datalog
     /// - Parameters:
     ///   - datalog: the datalog that will be parsed
@@ -48,6 +49,7 @@ public struct Rule: Sendable, Hashable, CustomStringConvertible {
         let parser = try Parser.forRule(using: datalog)
         self = parser.rules[0]
     }
+    #endif
 
     init(
         proto: Biscuit_Format_Schema_Rule,

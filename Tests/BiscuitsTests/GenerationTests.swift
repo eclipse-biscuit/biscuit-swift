@@ -92,6 +92,7 @@ final class GenerationTests: XCTestCase {
         }
     }
 
+    #if DatalogParser
     func testUnverifiedBasicToken() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
@@ -146,6 +147,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test001_basic")
     }
+    #endif
 
     func testBasicTokenDSL() throws {
         var biscuit = try Biscuit(rootKey: self.rootPrivateKey) {
@@ -179,6 +181,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test001_basic")
     }
 
+    #if DatalogParser
     func testScopedRules() throws {
         var biscuit = try Biscuit(
             authorityBlock: """
@@ -200,6 +203,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test007_scoped_rules")
     }
+    #endif
 
     func testScopedRulesDSL() throws {
         var biscuit = try Biscuit(rootKey: self.rootPrivateKey) {
@@ -224,6 +228,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test007_scoped_rules")
     }
 
+    #if DatalogParser
     func testScopedChecks() throws {
         var biscuit = try Biscuit(
             authorityBlock: """
@@ -243,6 +248,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test008_scoped_checks")
     }
+    #endif
 
     func testScopedChecksDSL() throws {
         var biscuit = try Biscuit(rootKey: self.rootPrivateKey) {
@@ -261,6 +267,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test008_scoped_checks")
     }
 
+    #if DatalogParser
     func testExpiredToken() throws {
         var biscuit = try Biscuit(
             authorityBlock: "",
@@ -274,6 +281,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test009_expired_token")
     }
+    #endif
 
     func testExpiredTokenDSL() throws {
         let date = ISO8601DateFormatter().date(from: "2018-12-20T00:00:00Z")!
@@ -289,6 +297,7 @@ final class GenerationTests: XCTestCase {
     }
 
     #if Regex
+    #if DatalogParser
     func testRegexConstraint() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
@@ -298,6 +307,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test014_regex_constraint")
     }
+    #endif
 
     func testRegexConstraintDSL() throws {
         let biscuit = try Biscuit(rootKey: self.rootPrivateKey) {
@@ -309,6 +319,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test014_regex_constraint")
     }
 
+    #if DatalogParser
     func testExpressions() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
@@ -356,6 +367,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test017_expressions")
     }
+    #endif
 
     func testExpressionsDSL() throws {
         let date2019 = ISO8601DateFormatter().date(from: "2019-12-04T09:46:41Z")!
@@ -427,6 +439,7 @@ final class GenerationTests: XCTestCase {
     }
     #endif
 
+    #if DatalogParser
     func testParsing() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
@@ -522,6 +535,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test025_check_all")
     }
+    #endif
 
     func testCheckAllDSL() throws {
         let biscuit = try Biscuit(rootKey: self.rootPrivateKey) {
@@ -535,6 +549,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test025_check_all")
     }
 
+    #if DatalogParser
     func testPublicKeysInterning() throws {
         var biscuit = try Biscuit(
             authorityBlock: """
@@ -577,6 +592,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test026_public_keys_interning")
     }
+    #endif
 
     func testPublicKeysInterningDSL() throws {
         let key1 = try Curve25519.Signing.PublicKey(
@@ -641,6 +657,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test026_public_keys_interning")
     }
 
+    #if DatalogParser
     func testIntegerWraparound() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
@@ -675,6 +692,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test029_reject_if")
     }
+    #endif
 
     func testRejectIfDSL() throws {
         let biscuit = try Biscuit(rootKey: self.rootPrivateKey) {
@@ -686,6 +704,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test029_reject_if")
     }
 
+    #if DatalogParser
     func testNull() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
@@ -696,6 +715,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test030_null")
     }
+    #endif
 
     func testNullDSL() throws {
         let biscuit = try Biscuit(rootKey: self.rootPrivateKey) {
@@ -711,6 +731,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test030_null")
     }
 
+    #if DatalogParser
     func testLazinessClosures() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
@@ -729,6 +750,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test032_laziness_closures")
     }
+    #endif
 
     func testLazinessClosuresDSL() throws {
         let biscuit = try Biscuit(rootKey: self.rootPrivateKey) {
@@ -768,6 +790,7 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test032_laziness_closures")
     }
 
+    #if DatalogParser
     func testTypeOf() throws {
         let biscuit = try Biscuit(
             authorityBlock: """
@@ -849,6 +872,7 @@ final class GenerationTests: XCTestCase {
         )
         try compareBiscuit(biscuit, with: "test038_try_op")
     }
+    #endif
 
     func testTryOrDSL() throws {
         let biscuit = try Biscuit(rootKey: self.rootPrivateKey) {

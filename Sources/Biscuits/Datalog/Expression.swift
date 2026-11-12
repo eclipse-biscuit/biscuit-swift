@@ -43,11 +43,13 @@ public struct Expression: ExpressionConvertible, Sendable, Hashable, CustomStrin
         self.ops = [.closure(lhs)] + rhs.ops + [.binary(op)]
     }
 
+    #if DatalogParser
     init(parse: Parser.Expression) {
         var ops: [Op] = []
         parseIntoOps(parse, &ops)
         self.ops = ops
     }
+    #endif
 
     /// A negation expression
     public var negated: Expression {
@@ -325,6 +327,7 @@ public protocol ExpressionConvertible {
     var expression: Expression { get }
 }
 
+#if DatalogParser
 func parseIntoOps(_ parse: Parser.Expression, _ ops: inout [Op]) {
     switch parse {
     case .term(let term): ops.append(.value(term))
@@ -338,6 +341,7 @@ func parseIntoOps(_ parse: Parser.Expression, _ ops: inout [Op]) {
         ops.append(.binary(op))
     }
 }
+#endif
 
 func printOps(_ ops: [Op], _ offset: inout Int, _ isLazy: Bool = false) -> String {
     offset -= 1
