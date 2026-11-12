@@ -246,7 +246,6 @@ final class AuthorizationTests: XCTestCase {
     }
     #endif
 
-
     #if DatalogParser
     func testRegexConstraint() throws {
         let biscuit = try self.loadBiscuit(from: "test014_regex_constraint")
@@ -292,7 +291,6 @@ final class AuthorizationTests: XCTestCase {
         XCTAssert(false)
     }
     #endif
-
 
     #if DatalogParser
     func testExpressionSyntax() throws {

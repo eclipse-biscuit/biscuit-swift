@@ -296,7 +296,6 @@ final class GenerationTests: XCTestCase {
         try compareBiscuit(biscuit, with: "test009_expired_token")
     }
 
-
     #if DatalogParser
     func testRegexConstraint() throws {
         let biscuit = try Biscuit(
