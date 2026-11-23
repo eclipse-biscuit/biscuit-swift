@@ -342,4 +342,44 @@ final class BiscuitsTests: XCTestCase {
             XCTAssert(false)
         } catch {}
     }
+
+    /// A "reject if" check with multiple queries should fail if *any* query matches,
+    /// not pass if any query fails to match.
+    func testRejectIfWithMultipleQueries() throws {
+        let rootPrivateKey = Curve25519.Signing.PrivateKey()
+        let queryA = Biscuit.Query([Predicate("a", true)], [], [])
+        let queryB = Biscuit.Query([Predicate("b", true)], [], [])
+        let reject = Check(.rejectIf, [queryA, queryB])
+        let biscuit = try Biscuit(rootKey: rootPrivateKey) { reject }
+
+        try biscuit.authorize { Policy.alwaysAllow }
+
+        XCTAssertThrowsError(
+            try biscuit.authorize {
+                Fact("a", true)
+                Fact("b", true)
+                Policy.alwaysAllow
+            }
+        ) { error in
+            XCTAssertEqual((error as? Biscuit.AuthorizationError)?.failedCheck, reject)
+        }
+
+        XCTAssertThrowsError(
+            try biscuit.authorize {
+                Fact("a", true)
+                Policy.alwaysAllow
+            }
+        ) { error in
+            XCTAssertEqual((error as? Biscuit.AuthorizationError)?.failedCheck, reject)
+        }
+
+        XCTAssertThrowsError(
+            try biscuit.authorize {
+                Fact("b", true)
+                Policy.alwaysAllow
+            }
+        ) { error in
+            XCTAssertEqual((error as? Biscuit.AuthorizationError)?.failedCheck, reject)
+        }
+    }
 }

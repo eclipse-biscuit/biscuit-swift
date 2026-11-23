@@ -190,20 +190,22 @@ extension Check {
                 } else {
                     resolution.trustScopes(query.trusted, blockID)
                 }
-            let checkSucceeded =
-                switch self.kind.wrapped {
-                case .one:
-                    try resolution.checkQueryIf(query, trusted, &steps)
-                case .all:
-                    try resolution.checkQueryAll(query, trusted, &steps)
-                case .reject:
-                    try !resolution.checkQueryIf(query, trusted, &steps)
+            switch self.kind.wrapped {
+            case .one:
+                if try resolution.checkQueryIf(query, trusted, &steps) {
+                    return true
                 }
-            if checkSucceeded {
-                return true
+            case .all:
+                if try resolution.checkQueryAll(query, trusted, &steps) {
+                    return true
+                }
+            case .reject:
+                if try resolution.checkQueryIf(query, trusted, &steps) {
+                    return false
+                }
             }
         }
-        return false
+        return self.kind.wrapped == .reject
     }
 }
 

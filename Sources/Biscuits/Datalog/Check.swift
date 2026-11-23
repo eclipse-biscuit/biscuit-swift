@@ -16,7 +16,8 @@ public struct Check: Sendable, Hashable, CustomStringConvertible {
     // to generate protobuf without a kind for those checks or signature verification will fail.
     let _kind: Kind?
 
-    /// The queries of this Check. For the check to pass, at least one must be true.
+    /// The queries of this Check. For a "check if" or "check all" check to pass, at least one must
+    /// be true; for a "reject if" check to pass, none may be true.
     public let queries: [Biscuit.Query]
 
     /// A variety of Check
