@@ -1,4 +1,4 @@
-# `2.1.0`
+# `3.0.0`
 
 - Add a constructor for `RootKeyID` from `UInt32`
 - Add support for maximum steps to `RunLimits`
@@ -9,6 +9,8 @@
 - Fix bugs in the behavior of hexadecimal string parsing: some APIs could crash on strings
   containing non-hexadecimal characters or odd length or non-empty strings and some did not accept
   uppercase letters.
+- Replaced `revocationID` with `revocationIDs` because blocks signed with ECDSA have two revocation
+  IDs.
 
 # `2.0.1`
 

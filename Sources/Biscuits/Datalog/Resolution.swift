@@ -241,12 +241,14 @@ struct Resolution {
 
 extension Biscuit.Block {
     fileprivate func addFacts(to facts: inout Resolution, in blockID: Int) throws -> Int {
-        let revocationID = Fact(index: blockID, revocationID: self.signature)
-        facts.recent.insert(revocationID, [])
+        let revocationIDs = self.revocationIDs
+        for revocationID in revocationIDs {
+            facts.recent.insert(Fact(index: blockID, revocationID: revocationID), [])
+        }
         for fact in self.datalog.facts {
             facts.recent.insert(fact, [blockID])
         }
-        return 1 + self.datalog.facts.count
+        return revocationIDs.count + self.datalog.facts.count
     }
 }
 

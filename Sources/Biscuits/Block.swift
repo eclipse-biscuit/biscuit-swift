@@ -2,6 +2,8 @@
  * Copyright (c) 2025 Contributors to the Eclipse Foundation.
  * SPDX-License-Identifier: Apache-2.0
  */
+@preconcurrency import Crypto
+
 #if canImport(FoundationEssentials)
 import FoundationEssentials
 #else
@@ -256,9 +258,13 @@ extension Biscuit {
             }
         }
 
-        /// The revocation ID for this block
-        public var revocationID: Data {
-            self.signature
+        /// The revocation IDs for this block
+        ///
+        /// Blocks signed with ed25519 have one revocation ID, whereas blocks signed with ECDSA have
+        /// two.
+        public var revocationIDs: [Data] {
+            (try? P256.Signing.ECDSASignature(derRepresentation: self.signature))?.malleableForms
+                ?? [self.signature]
         }
 
         var proto: Biscuit_Format_Schema_SignedBlock {

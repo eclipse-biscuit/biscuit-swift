@@ -70,3 +70,27 @@ extension P256.Signing.PublicKey: Biscuit.PublicKey {
     public var algorithm: Biscuit.SigningAlgorithm { .secp256r1 }
     public var dataRepresentation: Data { self.compressedRepresentation }
 }
+
+extension P256.Signing.ECDSASignature {
+    /// The order n of the P-256 group, big-endian
+    private static let order: [UInt8] = [
+        0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xBC, 0xE6, 0xFA, 0xAD, 0xA7, 0x17, 0x9E, 0x84, 0xF3, 0xB9, 0xCA, 0xC2, 0xFC, 0x63, 0x25, 0x51,
+    ]
+
+    /// Both valid forms of this signature, (r, s) and (r, n - s), DER-encoded.
+    var malleableForms: [Data] {
+        var raw = [UInt8](self.rawRepresentation)
+        let s = Array(raw[32..<64])
+        var borrow = 0
+        for i in (0..<32).reversed() {
+            let digit = Int(Self.order[i]) - Int(s[i]) - borrow
+            borrow = digit < 0 ? 1 : 0
+            raw[32 + i] = UInt8((digit + 256) % 256)
+        }
+        guard let flipped = try? Self(rawRepresentation: raw) else {
+            return [self.derRepresentation]
+        }
+        return [self.derRepresentation, flipped.derRepresentation]
+    }
+}
